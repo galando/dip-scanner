@@ -36,3 +36,14 @@ DEDUP_DAYS = 10             # Don't re-alert same ticker within N days
 # --- Data fetching ---
 BATCH_SLEEP = 0.5           # Seconds between fundamental fetches
 PRICE_HISTORY_PERIOD = "1y" # yfinance download period
+
+# --- Monthly paper-trading simulation (src/simulate.py) ---
+# A one-month, fake-money test of the strategy. Buys are the SAME strict
+# four-gate signals the scanner alerts on; sells are the mean-reversion exit.
+SIM_STATE_PATH = "simulation.json"   # Persisted portfolio + history
+SIM_CASH_PER_STOCK = 1000.0          # Notional $ allocated per position
+SIM_MAX_POSITIONS = 10               # Max concurrent open positions
+SIM_UPDATE_INTERVAL_DAYS = 3         # Send a status update every N days
+SIM_TAKE_PROFIT_PCT = 12.0           # SELL: recovered >= X% from entry (target hit)
+SIM_STOP_LOSS_PCT = 12.0             # SELL: fell >= X% from entry (thesis failed)
+SIM_RSI_EXIT = 60.0                  # SELL: RSI recovered above this (bounce done)
