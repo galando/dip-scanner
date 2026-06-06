@@ -62,17 +62,23 @@ def compose_alert(ticker: str, name: str, price: float, details: dict) -> str:
 
     regime_he, regime_en = _REGIME_LABELS.get(regime, (regime, regime))
 
-    # RSI line — plain-language description of where the stock is in its cycle
+    # RSI line — plain-language description of momentum/oversold status.
+    # RSI is a 0-100 scale: below 30 = stock was sold too much (potential bounce),
+    # above 70 = bought too much. We always show what the number means.
     turning_up = "turning up" in str(rsi_trend).lower()
     if isinstance(rsi, (int, float)):
+        rsi_int = round(rsi)
+        scale = f"RSI {rsi_int}/100 — oversold below 30"
         if rsi < 30 and turning_up:
-            rsi_line = f"📊 הייתה בשפל, מתחילה להתאושש (RSI {rsi:.0f}, turning up)"
+            rsi_line = f"📊 מכירת יתר ומתחילה להתאושש / oversold & recovering ({scale})"
         elif rsi < 30:
-            rsi_line = f"📊 בשפל עמוק, עדיין לא התאוששה (RSI {rsi:.0f})"
-        elif rsi < 40 and turning_up:
-            rsi_line = f"📊 יוצאת מאזור שפל (RSI {rsi:.0f}, recovering)"
+            rsi_line = f"📊 מכירת יתר, עדיין יורדת / oversold, still falling ({scale})"
+        elif rsi < 40:
+            rsi_line = f"📊 קרובה לאזור מכירת יתר / near oversold zone ({scale})"
+        elif rsi < 55 and not turning_up:
+            rsi_line = f"📊 לחץ מכירה נמשך, עדיין לא בתחתית / selling pressure, not at bottom yet ({scale})"
         else:
-            rsi_line = f"📊 RSI: {rsi:.0f} {rsi_trend}".rstrip()
+            rsi_line = f"📊 לא בשפל עדיין / not at oversold levels ({scale})"
     else:
         rsi_line = f"📊 RSI: {rsi} {rsi_trend}".rstrip()
 
@@ -88,9 +94,9 @@ def compose_alert(ticker: str, name: str, price: float, details: dict) -> str:
 
     below_200_str = "כן / Yes ⚠️" if below_200dma else "לא / No ✅"
 
-    # Quality section
-    roe_str = f"{roe}% — {_roe_label(roe)}" if isinstance(roe, (int, float)) else str(roe)
-    margin_str = f"{op_margin}% — {_margin_label(op_margin)}" if isinstance(op_margin, (int, float)) else str(op_margin)
+    # Quality section — round to 1 decimal to avoid float noise like 24.762999...
+    roe_str = f"{roe:.1f}% — {_roe_label(roe)}" if isinstance(roe, (int, float)) else str(roe)
+    margin_str = f"{op_margin:.1f}% — {_margin_label(op_margin)}" if isinstance(op_margin, (int, float)) else str(op_margin)
     debt_str = _debt_label(debt_eq) if isinstance(debt_eq, (int, float)) else str(debt_eq)
 
     # Warnings section
