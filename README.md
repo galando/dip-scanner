@@ -68,6 +68,43 @@ Every stock must pass all four gates:
 
 ---
 
+## Monthly Paper-Trading Simulation
+
+A one-time, fake-money test of the strategy that reports entirely through the
+Telegram bot. It runs for one calendar month and is driven by a daily GitHub
+Action (`Monthly Simulation` workflow) — no always-on server.
+
+**How it trades:**
+
+- **Buys** are the *same strict four-gate signals* the scanner alerts on — no
+  relaxation. It opens up to `SIM_MAX_POSITIONS` (10) positions, a notional
+  `SIM_CASH_PER_STOCK` ($1,000) each, and fills free slots with fresh dip
+  signals as they appear during the month.
+- **Sells** use the mean-reversion exit, checked daily:
+  - take-profit: recovered ≥ `SIM_TAKE_PROFIT_PCT` from entry,
+  - stop-loss: fell ≥ `SIM_STOP_LOSS_PCT` from entry,
+  - bounce done: RSI back above `SIM_RSI_EXIT` while in profit,
+  - thesis break: a fresh price-based trap (new lows / steep downtrend / gap-down).
+- **Every buy and sell is announced** on Telegram with its reason, a plain
+  status update goes out every `SIM_UPDATE_INTERVAL_DAYS` (3) days, and a full
+  summary is sent at month end.
+
+**Run it:**
+
+```bash
+# Local dry run (prints to stdout if Telegram creds are unset)
+PYTHONPATH=. python -m src.simulate
+```
+
+In GitHub: `Actions > Monthly Simulation > Run workflow` starts it today. The
+daily cron then drives buys, sells, updates, and the final summary for the rest
+of the month. To start a fresh month later, dispatch the workflow with the
+`reset` input checked (deletes `simulation.json`). State lives in
+`simulation.json` and is committed back by the workflow. This is a simulation
+only — never investment advice.
+
+---
+
 ## Threshold Tuning
 
 All thresholds live in `config.py`. Key knobs:

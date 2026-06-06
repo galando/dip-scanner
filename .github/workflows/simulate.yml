@@ -1,0 +1,38 @@
+name: Monthly Simulation
+on:
+  schedule:
+    # 20:45 UTC weekdays, just after the daily scan (after US close 16:00 ET).
+    # The script itself decides each day whether to buy, sell, post an update,
+    # or close the book — so a plain daily trigger is all it needs.
+    - cron: '45 20 * * 1-5'
+  workflow_dispatch:           # manual run — also used to start the simulation today
+    inputs:
+      reset:
+        description: 'Start a fresh simulation (deletes simulation.json first)'
+        type: boolean
+        default: false
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Reset simulation (optional)
+        if: ${{ inputs.reset == true }}
+        run: rm -f simulation.json
+      - name: Run simulation step
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONPATH: .
+        run: python -m src.simulate
+      - name: Commit simulation state
+        run: |
+          git config user.name "dip-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add simulation.json || true
+          git commit -m "update simulation state" || true
+          git push || true
