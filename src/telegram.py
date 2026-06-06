@@ -7,12 +7,44 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-def compose_alert(ticker: str, name: str, price: float, details: dict) -> str:
-    """Compose a Telegram alert message from gate results.
+_SIGNAL_HE = {
+    "RSI turning up from oversold": "RSI מתהפך מעלה",
+    "higher low": "הפסיקה לרדת",
+    "consecutive up closes": "עליות רצופות",
+}
 
-    Includes: regime, ticker, price, drawdown, vol-adjusted drop, RSI,
-    stabilization method(s), 200dma status, quality metrics, trap flags, disclaimer.
-    """
+_REGIME_LABELS = {
+    "RISK_ON": ("תקין", "Normal"),
+    "RISK_OFF": ("זהיר", "Cautious"),
+}
+
+
+def _roe_label(v: float) -> str:
+    if v >= 20:
+        return "טוב / Good"
+    if v >= 10:
+        return "סביר / Fair"
+    return "נמוך / Low"
+
+
+def _margin_label(v: float) -> str:
+    if v >= 15:
+        return "טוב / Good"
+    if v >= 5:
+        return "סביר / Fair"
+    return "נמוך / Low"
+
+
+def _debt_label(v: float) -> str:
+    if v < 50:
+        return "נמוך / Low"
+    if v <= 150:
+        return "בינוני / Medium"
+    return "גבוה / High"
+
+
+def compose_alert(ticker: str, name: str, price: float, details: dict) -> str:
+    """Compose a bilingual (Hebrew/English) Telegram alert in plain language."""
     regime = details.get("regime", "UNKNOWN")
     drawdown = details.get("drawdown_pct", 0)
     vol_adj = details.get("vol_adjusted_drop", "N/A")
@@ -26,41 +58,69 @@ def compose_alert(ticker: str, name: str, price: float, details: dict) -> str:
     mkt_cap = details.get("mkt_cap", 0)
     warnings = details.get("warnings", [])
 
-    # Format market cap
-    if isinstance(mkt_cap, (int, float)) and mkt_cap > 0:
-        mkt_cap_str = f"${mkt_cap / 1e9:.0f}B"
+    mkt_cap_str = f"${mkt_cap / 1e9:.0f}B" if isinstance(mkt_cap, (int, float)) and mkt_cap > 0 else "N/A"
+
+    regime_he, regime_en = _REGIME_LABELS.get(regime, (regime, regime))
+
+    # RSI line — plain-language description of where the stock is in its cycle
+    turning_up = "turning up" in str(rsi_trend).lower()
+    if isinstance(rsi, (int, float)):
+        if rsi < 30 and turning_up:
+            rsi_line = f"📊 הייתה בשפל, מתחילה להתאושש (RSI {rsi:.0f}, turning up)"
+        elif rsi < 30:
+            rsi_line = f"📊 בשפל עמוק, עדיין לא התאוששה (RSI {rsi:.0f})"
+        elif rsi < 40 and turning_up:
+            rsi_line = f"📊 יוצאת מאזור שפל (RSI {rsi:.0f}, recovering)"
+        else:
+            rsi_line = f"📊 RSI: {rsi:.0f} {rsi_trend}".rstrip()
     else:
-        mkt_cap_str = "N/A"
+        rsi_line = f"📊 RSI: {rsi} {rsi_trend}".rstrip()
 
-    # Stabilization evidence
-    stab_str = ", ".join(signals) if signals else "none"
+    # Stabilization signals — translate known strings, keep unknown ones as-is
+    def _translate(s: str) -> str:
+        he = _SIGNAL_HE.get(s)
+        return f"{he} ({s})" if he else s
 
-    # Trap check section
-    trap_lines = []
-    for w in warnings:
-        trap_lines.append(f"  WARNING: {w}")
-    if not trap_lines:
-        trap_lines.append("  No red flags detected")
+    if signals:
+        stab_line = f"✅ סימני יציבות / Stability: {', '.join(_translate(s) for s in signals)}"
+    else:
+        stab_line = "⚠️ אין סימני יציבות ברורים / No clear stability signals yet"
 
+    below_200_str = "כן / Yes ⚠️" if below_200dma else "לא / No ✅"
+
+    # Quality section
+    roe_str = f"{roe}% — {_roe_label(roe)}" if isinstance(roe, (int, float)) else str(roe)
+    margin_str = f"{op_margin}% — {_margin_label(op_margin)}" if isinstance(op_margin, (int, float)) else str(op_margin)
+    debt_str = _debt_label(debt_eq) if isinstance(debt_eq, (int, float)) else str(debt_eq)
+
+    # Warnings section
+    trap_lines = [f"  ⚠️ {w}" for w in warnings] or ["  לא נמצאו דגלים אדומים / No red flags ✅"]
     trap_section = "\n".join(trap_lines)
 
+    drawdown_abs = abs(drawdown)
     msg = (
-        f"Dip Opportunity Detected   [Regime: {regime}]\n"
+        f"🔔 התראת ירידה / Dip Alert  [שוק: {regime_he} / Market: {regime_en}]\n"
         f"\n"
-        f"{ticker} -- {name}\n"
-        f"Price: ${price:.2f}\n"
-        f"Drawdown from 52w high: {drawdown:.0f}%\n"
-        f"Vol-adjusted drop: {vol_adj}x\n"
-        f"RSI(14): {rsi} {rsi_trend}\n"
-        f"Stabilization: {stab_str}\n"
-        f"Below 200-day MA: {'yes' if below_200dma else 'no'}\n"
+        f"{ticker} — {name}\n"
+        f"מחיר נוכחי / Price: ${price:.2f}\n"
+        f"📉 ירדה {drawdown_abs:.0f}% מהשיא שלה השנה (down {drawdown_abs:.0f}% from its yearly high)\n"
+        f"💧 הירידה גדולה יותר מהרגיל לה פי {vol_adj} (drop is {vol_adj}x larger than its typical moves)\n"
+        f"{rsi_line}\n"
+        f"{stab_line}\n"
         f"\n"
-        f"Quality: ROE {roe}% | Op margin {op_margin}% | Debt/Eq {debt_eq} | Mkt cap {mkt_cap_str}\n"
+        f"בריאות החברה / Company Health:\n"
+        f"  תשואה על ההון / ROE: {roe_str}\n"
+        f"  מרווח רווח / Profit margin: {margin_str}\n"
+        f"  חוב / Debt: {debt_str}\n"
+        f"  מתחת לממוצע 200 יום / Below 200d MA: {below_200_str}\n"
+        f"  שווי שוק / Market cap: {mkt_cap_str}\n"
         f"\n"
-        f"Trap check:\n{trap_section}\n"
+        f"⚠️ שים לב / Watch out:\n"
+        f"{trap_section}\n"
         f"\n"
-        f"Your call. Check WHY it fell before entering.\n"
-        f"This is not investment advice."
+        f"👉 זו נקודת התחלה לבדוק, לא ייעוץ השקעות.\n"
+        f"   לפני שעושים כלום, כדאי להבין למה היא ירדה.\n"
+        f"   (Check WHY it dropped before acting — not investment advice.)"
     )
     return msg
 
