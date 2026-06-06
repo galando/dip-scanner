@@ -31,11 +31,13 @@ def fetch_prices(tickers: list[str], period: str = None) -> dict[str, pd.DataFra
         logger.warning("Batch price download returned empty data")
         return result
 
-    # Single ticker: yfinance returns flat columns, not MultiIndex
+    # Single ticker: yfinance 1.x still returns MultiIndex (ticker at level 0)
     if len(tickers) == 1:
         ticker = tickers[0]
         if not raw.empty and not raw.isna().all().all():
-            result[ticker] = raw
+            df = raw[ticker] if isinstance(raw.columns, pd.MultiIndex) else raw
+            if not df.empty and not df["Close"].isna().all():
+                result[ticker] = df
         return result
 
     # Multi-ticker: MultiIndex columns (ticker, field)

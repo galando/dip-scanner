@@ -4,6 +4,8 @@ on:
     # 20:30 UTC ~ 22:30 Amsterdam (summer) / 21:30 (winter), after US close (16:00 ET)
     - cron: '30 20 * * 1-5'   # weekdays only
   workflow_dispatch:           # manual run for testing
+  push:
+    branches: [main]           # run on every merge to main
 jobs:
   scan:
     runs-on: ubuntu-latest
