@@ -62,23 +62,23 @@ def compose_alert(ticker: str, name: str, price: float, details: dict) -> str:
 
     regime_he, regime_en = _REGIME_LABELS.get(regime, (regime, regime))
 
-    # RSI line — plain-language description of momentum/oversold status.
-    # RSI is a 0-100 scale: below 30 = stock was sold too much (potential bounce),
-    # above 70 = bought too much. We always show what the number means.
+    # RSI line — avoid jargon; describe what the selling pressure means in plain terms.
+    # RSI 0-100: below 30 = stock was sold off too hard (potential bounce),
+    # above 70 = bought up too hard. We always show what the number means.
     turning_up = "turning up" in str(rsi_trend).lower()
     if isinstance(rsi, (int, float)):
         rsi_int = round(rsi)
-        scale = f"RSI {rsi_int}/100 — oversold below 30"
+        scale = f"RSI {rsi_int}/100 — below 30 = sold off too hard, potential bounce"
         if rsi < 30 and turning_up:
-            rsi_line = f"📊 מכירת יתר ומתחילה להתאושש / oversold & recovering ({scale})"
+            rsi_line = f"📊 נמכרה יתר על המידה ומתחילה להתאושש / sold off too hard, starting to recover ({scale})"
         elif rsi < 30:
-            rsi_line = f"📊 מכירת יתר, עדיין יורדת / oversold, still falling ({scale})"
+            rsi_line = f"📊 נמכרה יתר על המידה, עדיין יורדת / sold off too hard, still falling ({scale})"
         elif rsi < 40:
-            rsi_line = f"📊 קרובה לאזור מכירת יתר / near oversold zone ({scale})"
+            rsi_line = f"📊 קרובה לאזור מכירה קיצונית / nearing extreme selling zone ({scale})"
         elif rsi < 55 and not turning_up:
             rsi_line = f"📊 לחץ מכירה נמשך, עדיין לא בתחתית / selling pressure, not at bottom yet ({scale})"
         else:
-            rsi_line = f"📊 לא בשפל עדיין / not at oversold levels ({scale})"
+            rsi_line = f"📊 לא ירדה מספיק עדיין / not beaten down enough yet ({scale})"
     else:
         rsi_line = f"📊 RSI: {rsi} {rsi_trend}".rstrip()
 
