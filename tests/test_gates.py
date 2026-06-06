@@ -243,7 +243,7 @@ class TestGate3Trap:
 
         passed, details = gate_3_trap(fund, prices_df, cfg=config, trap_behavior="warn")
         assert passed is True
-        assert any("earnings" in w.lower() for w in details.get("warnings", []))
+        assert any("דוח" in w for w in details.get("warnings", []))
 
     def test_earnings_suppress_mode(self):
         """Scenario 8: Earnings suppression blocks the alert."""
@@ -263,4 +263,4 @@ class TestGate3Trap:
 
         passed, details = gate_3_trap(fund, prices_df, cfg=config, trap_behavior="warn")
         assert passed is True
-        assert any("revenue" in w.lower() for w in details.get("warnings", []))
+        assert any("הכנסות" in w for w in details.get("warnings", []))

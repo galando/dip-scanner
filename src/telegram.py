@@ -8,11 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def compose_alert(ticker: str, name: str, price: float, details: dict) -> str:
-    """Compose a Telegram alert message from gate results.
-
-    Includes: regime, ticker, price, drawdown, vol-adjusted drop, RSI,
-    stabilization method(s), 200dma status, quality metrics, trap flags, disclaimer.
-    """
+    """Compose a Telegram alert message from gate results (Hebrew, plain language)."""
     regime = details.get("regime", "UNKNOWN")
     drawdown = details.get("drawdown_pct", 0)
     vol_adj = details.get("vol_adjusted_drop", "N/A")
@@ -26,41 +22,63 @@ def compose_alert(ticker: str, name: str, price: float, details: dict) -> str:
     mkt_cap = details.get("mkt_cap", 0)
     warnings = details.get("warnings", [])
 
-    # Format market cap
     if isinstance(mkt_cap, (int, float)) and mkt_cap > 0:
         mkt_cap_str = f"${mkt_cap / 1e9:.0f}B"
     else:
         mkt_cap_str = "N/A"
 
-    # Stabilization evidence
-    stab_str = ", ".join(signals) if signals else "none"
+    stab_str = ", ".join(signals) if signals else "אין"
 
-    # Trap check section
+    regime_labels = {
+        "RISK_ON": "שוק אופטימי — משקיעים נוטים לסיכון",
+        "RISK_OFF": "שוק זהיר — משקיעים נוטים להגנה",
+    }
+    regime_he = regime_labels.get(regime, regime)
+
+    if isinstance(rsi, (int, float)):
+        if rsi < 30:
+            rsi_desc = "אזור קנייה אפשרי"
+        elif rsi < 40:
+            rsi_desc = "קרוב לאזור קנייה"
+        else:
+            rsi_desc = "עדיין לא בתחתית"
+    else:
+        rsi_desc = ""
+
+    below_200dma_str = "כן ⚠️" if below_200dma else "לא ✅"
+
     trap_lines = []
     for w in warnings:
-        trap_lines.append(f"  WARNING: {w}")
+        trap_lines.append(f"  ⚠️ {w}")
     if not trap_lines:
-        trap_lines.append("  No red flags detected")
+        trap_lines.append("  לא נמצאו דגלים אדומים ✅")
 
     trap_section = "\n".join(trap_lines)
 
     msg = (
-        f"Dip Opportunity Detected   [Regime: {regime}]\n"
+        f"🔔 זוהתה הזדמנות קנייה פוטנציאלית!\n"
+        f"[{regime} — {regime_he}]\n"
         f"\n"
-        f"{ticker} -- {name}\n"
-        f"Price: ${price:.2f}\n"
-        f"Drawdown from 52w high: {drawdown:.0f}%\n"
-        f"Vol-adjusted drop: {vol_adj}x\n"
-        f"RSI(14): {rsi} {rsi_trend}\n"
-        f"Stabilization: {stab_str}\n"
-        f"Below 200-day MA: {'yes' if below_200dma else 'no'}\n"
+        f"📌 {ticker} — {name}\n"
+        f"💰 מחיר: ${price:.2f}\n"
+        f"📉 ירד {abs(drawdown):.0f}% מהשיא של השנה האחרונה\n"
+        f"⚡ עוצמת הירידה: חריגה פי {vol_adj} מהרגיל\n"
         f"\n"
-        f"Quality: ROE {roe}% | Op margin {op_margin}% | Debt/Eq {debt_eq} | Mkt cap {mkt_cap_str}\n"
+        f"📊 אינדיקטורים טכניים:\n"
+        f"  RSI: {rsi} {rsi_trend} — {rsi_desc}\n"
+        f"  סימני בלימה: {stab_str}\n"
+        f"  מתחת לממוצע 200 יום: {below_200dma_str}\n"
         f"\n"
-        f"Trap check:\n{trap_section}\n"
+        f"🏢 נתוני החברה:\n"
+        f"  תשואה על ההון (ROE): {roe}%\n"
+        f"  רווחיות תפעולית: {op_margin}%\n"
+        f"  יחס חוב-להון: {debt_eq}\n"
+        f"  שווי שוק: {mkt_cap_str}\n"
         f"\n"
-        f"Your call. Check WHY it fell before entering.\n"
-        f"This is not investment advice."
+        f"🚩 בדיקת מלכודת:\n{trap_section}\n"
+        f"\n"
+        f"💡 לפני שנכנסים — בדוק מה גרם לירידה.\n"
+        f"זה לא ייעוץ השקעות."
     )
     return msg
 

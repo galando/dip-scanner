@@ -72,12 +72,12 @@ class TestComposeAlert:
     def test_includes_trap_flags(self):
         """Alert includes trap check section."""
         msg = compose_alert("NFLX", "Netflix Inc.", 450.0, self._make_gate_details())
-        assert "trap" in msg.lower() or "revenue" in msg.lower() or "warning" in msg.lower()
+        assert "מלכודת" in msg or "⚠️" in msg
 
     def test_includes_disclaimer(self):
         """Alert includes disclaimer text."""
         msg = compose_alert("NFLX", "Netflix Inc.", 450.0, self._make_gate_details())
-        assert "your call" in msg.lower() or "disclaimer" in msg.lower() or "not investment advice" in msg.lower()
+        assert "ייעוץ השקעות" in msg
 
     def test_includes_200dma_status(self):
         """Alert includes 200-day MA status."""
