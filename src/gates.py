@@ -172,10 +172,10 @@ def gate_3_trap(
     revenue_growth = fundamentals.get("revenueGrowth")
 
     if earnings_growth is not None and earnings_growth < -0.1:
-        warnings.append(f"ירידה ברווחים: {earnings_growth * 100:.0f}% — אות אזהרה")
+        warnings.append(f"ירידה ברווחים: {earnings_growth * 100:.0f}% / Earnings down {earnings_growth * 100:.0f}%")
 
     if revenue_growth is not None and revenue_growth < 0:
-        warnings.append(f"ירידה בהכנסות: {revenue_growth * 100:.0f}% לעומת שנה שעברה — אות אזהרה")
+        warnings.append(f"הכנסות ירדו {revenue_growth * 100:.0f}% לעומת שנה שעברה / Revenue down {revenue_growth * 100:.0f}% YoY")
 
     # --- Price-based trap detection (weighted higher) ---
     closes = prices["Close"].values
@@ -187,7 +187,7 @@ def gate_3_trap(
         recent_low = closes[-1]
         period_low = closes[-cfg.FRESH_LOW_DAYS:].min()
         if recent_low <= period_low:
-            warnings.append(f"שפל חדש של {cfg.FRESH_LOW_DAYS} ימים — המניה ממשיכה לרדת")
+            warnings.append(f"שפל חדש של {cfg.FRESH_LOW_DAYS} ימים — עדיין יורדת / Fresh {cfg.FRESH_LOW_DAYS}-day low")
 
     # Steep downtrend: 50-day MA declining steeply
     if n >= 60:
@@ -195,7 +195,7 @@ def gate_3_trap(
         if not np.isnan(sma_50.iloc[-1]) and not np.isnan(sma_50.iloc[-11]):
             decline_pct = (sma_50.iloc[-1] - sma_50.iloc[-11]) / sma_50.iloc[-11] * 100
             if decline_pct < -cfg.STEEP_DOWNTREND_PCT:
-                warnings.append(f"מגמת ירידה חדה: ממוצע 50 יום ירד {decline_pct:.1f}% ב-10 ימים")
+                warnings.append(f"מגמת ירידה חדה: ממוצע 50 יום ירד {decline_pct:.1f}% ב-10 ימים / Steep downtrend: 50d MA {decline_pct:.1f}% in 10 days")
 
     # Gap-down on high volume in last few days
     if n >= 5:
@@ -204,7 +204,7 @@ def gate_3_trap(
             if i - 1 >= -n:
                 gap = (closes[i] - closes[i - 1]) / closes[i - 1] * 100
                 if gap < -cfg.GAP_DOWN_PCT and volumes[i] > avg_vol * cfg.GAP_VOLUME_MULT:
-                    warnings.append(f"צניחה חדה של {gap:.1f}% עם נפח מסחר גבוה פי {volumes[i] / avg_vol:.1f}")
+                    warnings.append(f"צניחה חדה של {gap:.1f}% עם נפח מסחר גבוה פי {volumes[i] / avg_vol:.1f} / Gap-down {gap:.1f}% on {volumes[i] / avg_vol:.1f}x volume")
 
     # --- Earnings blackout ---
     earnings_date_str = fundamentals.get("nextEarningsDate")
@@ -213,7 +213,7 @@ def gate_3_trap(
             earnings_date = datetime.strptime(earnings_date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
             days_to_earnings = (earnings_date - datetime.now(timezone.utc)).days
             if 0 <= days_to_earnings <= cfg.EARNINGS_BLACKOUT_DAYS:
-                warnings.append(f"דוח רבעוני עוד {days_to_earnings} ימים — סיכון לתנודתיות")
+                warnings.append(f"דוח רבעוני עוד {days_to_earnings} ימים — יכול להיות תנודתי / Earnings in {days_to_earnings} days")
                 if fundamentals.get("suppressOnEarnings") and trap_behavior == "suppress":
                     return False, {"warnings": warnings, "reason": "Earnings blackout suppressed"}
         except (ValueError, TypeError):

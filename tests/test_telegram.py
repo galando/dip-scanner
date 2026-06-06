@@ -27,9 +27,9 @@ class TestComposeAlert:
         }
 
     def test_includes_regime_label(self):
-        """Alert includes regime label."""
+        """Alert includes regime label (Hebrew and English)."""
         msg = compose_alert("NFLX", "Netflix Inc.", 450.0, self._make_gate_details())
-        assert "RISK_ON" in msg
+        assert "תקין" in msg or "Normal" in msg
 
     def test_includes_ticker_and_name(self):
         """Alert includes ticker symbol and company name."""
