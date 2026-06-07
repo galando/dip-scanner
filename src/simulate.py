@@ -184,13 +184,14 @@ def _milestones(start: date, end: date, interval: int) -> list[date]:
 # Notifications
 # --------------------------------------------------------------------------- #
 def _send(message: str) -> None:
-    """Send via Telegram if credentials are set, else log to stdout."""
+    """Send via Telegram to all registered users, else log to stdout."""
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
-    if token and chat_id:
-        telegram.send_alert(token, chat_id, message)
+    chat_ids = telegram.get_chat_ids()
+    if token and chat_ids:
+        for cid in chat_ids:
+            telegram.send_alert(token, cid, message)
     else:
-        logger.warning("Telegram credentials not set, printing message instead")
+        logger.warning("Telegram credentials not set or no users registered, printing message instead")
         print(message)
 
 
