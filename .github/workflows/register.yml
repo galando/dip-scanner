@@ -1,8 +1,5 @@
 name: Register Bot Users
 on:
-  schedule:
-    # Poll every 30 minutes to pick up new users quickly
-    - cron: '*/30 * * * *'
   workflow_dispatch:
 jobs:
   register:
