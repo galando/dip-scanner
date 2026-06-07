@@ -101,11 +101,12 @@ def run_scan() -> list[str]:
             msg = telegram.compose_alert(ticker, name, price, all_details)
 
             token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-            chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
-            if token and chat_id:
-                telegram.send_alert(token, chat_id, msg)
+            chat_ids = telegram.get_chat_ids()
+            if token and chat_ids:
+                for cid in chat_ids:
+                    telegram.send_alert(token, cid, msg)
             else:
-                logger.warning("Telegram credentials not set, printing alert instead")
+                logger.warning("Telegram credentials not set or no users registered, printing alert instead")
                 print(msg)
 
             # Mark alerted

@@ -1,4 +1,5 @@
 """Telegram alert sender — compose and send dip opportunity alerts."""
+import json
 import logging
 import os
 
@@ -300,6 +301,30 @@ def compose_summary(closed: list[dict], open_rows: list[dict], start_date: str,
         "not investment advice.)"
     )
     return "\n".join(lines)
+
+
+_USERS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "users.json")
+
+
+def get_chat_ids() -> list[str]:
+    """Return all registered chat IDs from data/users.json plus TELEGRAM_CHAT_ID env var."""
+    ids: set[str] = set()
+
+    env_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+    if env_id:
+        ids.add(env_id)
+
+    try:
+        with open(_USERS_FILE) as f:
+            data = json.load(f)
+        for cid in data.get("chat_ids", []):
+            cid = str(cid).strip()
+            if cid:
+                ids.add(cid)
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+
+    return sorted(ids)
 
 
 def send_alert(token: str, chat_id: str, message: str) -> bool:
