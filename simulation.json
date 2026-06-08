@@ -1,0 +1,190 @@
+{
+  "status": "RUNNING",
+  "start_date": "2026-06-08",
+  "end_date": "2026-06-30",
+  "cash_per_stock": 1000.0,
+  "max_positions": 10,
+  "positions": [
+    {
+      "ticker": "NOW",
+      "name": "ServiceNow, Inc.",
+      "entry_price": 114.19000244140625,
+      "entry_date": "2026-06-08",
+      "shares": 8.757334080215342,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -45.3,
+        "rsi": 55.7,
+        "below_200dma": true,
+        "vol_adjusted_drop": 90.89,
+        "atr_distance": -1.98,
+        "stabilization_signals": [
+          "higher low",
+          "consecutive up closes"
+        ],
+        "stabilization_count": 2,
+        "roe": 16.07,
+        "op_margin": 13.342,
+        "debt_eq": 20.728,
+        "mkt_cap": 117765062656,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "ACN",
+      "name": "Accenture plc",
+      "entry_price": 174.42999267578125,
+      "entry_date": "2026-06-08",
+      "shares": 5.732959020750134,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -44.9,
+        "rsi": 44.7,
+        "below_200dma": true,
+        "vol_adjusted_drop": 124.16,
+        "atr_distance": 1.11,
+        "stabilization_signals": [
+          "higher low"
+        ],
+        "stabilization_count": 1,
+        "roe": 24.762999999999998,
+        "op_margin": 13.819,
+        "debt_eq": 25.469,
+        "mkt_cap": 107350343680,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "ADBE",
+      "name": "Adobe Inc.",
+      "entry_price": 244.99000549316406,
+      "entry_date": "2026-06-08",
+      "shares": 4.081799165590463,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -41.1,
+        "rsi": 46.6,
+        "below_200dma": true,
+        "vol_adjusted_drop": 121.28,
+        "atr_distance": 0.12,
+        "stabilization_signals": [
+          "higher low"
+        ],
+        "stabilization_count": 1,
+        "roe": 58.774,
+        "op_margin": 38.762,
+        "debt_eq": 58.34,
+        "mkt_cap": 99024961536,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "NFLX",
+      "name": "Netflix, Inc.",
+      "entry_price": 82.63999938964844,
+      "entry_date": "2026-06-08",
+      "shares": 12.100677727319308,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -38.3,
+        "rsi": 32.8,
+        "below_200dma": true,
+        "vol_adjusted_drop": 115.36,
+        "atr_distance": 4.2,
+        "stabilization_signals": [
+          "consecutive up closes"
+        ],
+        "stabilization_count": 1,
+        "roe": 48.494998,
+        "op_margin": 32.303002,
+        "debt_eq": 53.788,
+        "mkt_cap": 347980398592,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "ABT",
+      "name": "Abbott Laboratories",
+      "entry_price": 90.5,
+      "entry_date": "2026-06-08",
+      "shares": 11.049723756906078,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -33.1,
+        "rsi": 54.8,
+        "below_200dma": true,
+        "vol_adjusted_drop": 135.36,
+        "atr_distance": 0.78,
+        "stabilization_signals": [
+          "higher low"
+        ],
+        "stabilization_count": 1,
+        "roe": 12.333999599999999,
+        "op_margin": 13.472000000000001,
+        "debt_eq": 64.773,
+        "mkt_cap": 157634084864,
+        "warnings": [
+          "\u05d9\u05e8\u05d9\u05d3\u05d4 \u05d1\u05e8\u05d5\u05d5\u05d7\u05d9\u05dd: -20% / Earnings down -20%",
+          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -3.8% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -3.8% in 10 days"
+        ],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "CRM",
+      "name": "Salesforce, Inc.",
+      "entry_price": 182.5500030517578,
+      "entry_date": "2026-06-08",
+      "shares": 5.477951154656915,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -32.9,
+        "rsi": 48.8,
+        "below_200dma": true,
+        "vol_adjusted_drop": 86.71,
+        "atr_distance": -0.15,
+        "stabilization_signals": [
+          "higher low"
+        ],
+        "stabilization_count": 1,
+        "roe": 16.908,
+        "op_margin": 21.8,
+        "debt_eq": 124.282,
+        "mkt_cap": 149508456448,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "TMO",
+      "name": "Thermo Fisher Scientific Inc",
+      "entry_price": 469.6300048828125,
+      "entry_date": "2026-06-08",
+      "shares": 2.1293358380062015,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -26.5,
+        "rsi": 49.1,
+        "below_200dma": true,
+        "vol_adjusted_drop": 85.31,
+        "atr_distance": 0.67,
+        "stabilization_signals": [
+          "higher low"
+        ],
+        "stabilization_count": 1,
+        "roe": 13.523,
+        "op_margin": 17.892,
+        "debt_eq": 82.903,
+        "mkt_cap": 174524596224,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
+    }
+  ],
+  "closed": [],
+  "updates_sent": []
+}
