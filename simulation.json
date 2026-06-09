@@ -82,59 +82,6 @@
       }
     },
     {
-      "ticker": "NFLX",
-      "name": "Netflix, Inc.",
-      "entry_price": 82.63999938964844,
-      "entry_date": "2026-06-08",
-      "shares": 12.100677727319308,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -38.3,
-        "rsi": 32.8,
-        "below_200dma": true,
-        "vol_adjusted_drop": 115.36,
-        "atr_distance": 4.2,
-        "stabilization_signals": [
-          "consecutive up closes"
-        ],
-        "stabilization_count": 1,
-        "roe": 48.494998,
-        "op_margin": 32.303002,
-        "debt_eq": 53.788,
-        "mkt_cap": 347980398592,
-        "warnings": [],
-        "regime": "RISK_ON"
-      }
-    },
-    {
-      "ticker": "ABT",
-      "name": "Abbott Laboratories",
-      "entry_price": 90.5,
-      "entry_date": "2026-06-08",
-      "shares": 11.049723756906078,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -33.1,
-        "rsi": 54.8,
-        "below_200dma": true,
-        "vol_adjusted_drop": 135.36,
-        "atr_distance": 0.78,
-        "stabilization_signals": [
-          "higher low"
-        ],
-        "stabilization_count": 1,
-        "roe": 12.333999599999999,
-        "op_margin": 13.472000000000001,
-        "debt_eq": 64.773,
-        "mkt_cap": 157634084864,
-        "warnings": [
-          "\u05d9\u05e8\u05d9\u05d3\u05d4 \u05d1\u05e8\u05d5\u05d5\u05d7\u05d9\u05dd: -20% / Earnings down -20%",
-          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -3.8% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -3.8% in 10 days"
-        ],
-        "regime": "RISK_ON"
-      }
-    },
-    {
       "ticker": "CRM",
       "name": "Salesforce, Inc.",
       "entry_price": 182.5500030517578,
@@ -183,8 +130,91 @@
         "warnings": [],
         "regime": "RISK_ON"
       }
+    },
+    {
+      "ticker": "NKE",
+      "name": "Nike, Inc.",
+      "entry_price": 44.650001525878906,
+      "entry_date": "2026-06-09",
+      "shares": 22.396415807968232,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -42.1,
+        "rsi": 52.1,
+        "below_200dma": true,
+        "vol_adjusted_drop": 109.99,
+        "atr_distance": -0.36,
+        "stabilization_signals": [
+          "consecutive up closes"
+        ],
+        "stabilization_count": 1,
+        "roe": 16.016,
+        "op_margin": 6.941999999999999,
+        "debt_eq": 79.333,
+        "mkt_cap": 66121609216,
+        "warnings": [
+          "\u05d9\u05e8\u05d9\u05d3\u05d4 \u05d1\u05e8\u05d5\u05d5\u05d7\u05d9\u05dd: -35% / Earnings down -35%",
+          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -3.5% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -3.5% in 10 days"
+        ],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "CMCSA",
+      "name": "Comcast Corporation",
+      "entry_price": 23.850000381469727,
+      "entry_date": "2026-06-09",
+      "shares": 41.92872050337369,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -26.9,
+        "rsi": 33.7,
+        "below_200dma": true,
+        "vol_adjusted_drop": 94.92,
+        "atr_distance": 3.93,
+        "stabilization_signals": [
+          "consecutive up closes"
+        ],
+        "stabilization_count": 1,
+        "roe": 20.918,
+        "op_margin": 13.145000000000001,
+        "debt_eq": 106.858,
+        "mkt_cap": 85197651968,
+        "warnings": [
+          "\u05d9\u05e8\u05d9\u05d3\u05d4 \u05d1\u05e8\u05d5\u05d5\u05d7\u05d9\u05dd: -33% / Earnings down -33%",
+          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -3.2% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -3.2% in 10 days"
+        ],
+        "regime": "RISK_ON"
+      }
     }
   ],
-  "closed": [],
+  "closed": [
+    {
+      "ticker": "NFLX",
+      "name": "Netflix, Inc.",
+      "entry_price": 82.63999938964844,
+      "entry_date": "2026-06-08",
+      "exit_price": 81.41000366210938,
+      "exit_date": "2026-06-09",
+      "shares": 12.100677727319308,
+      "cost_basis": 1000.0,
+      "pnl": -14.883781904929833,
+      "pnl_pct": -1.4883781904929894,
+      "sell_reason": "\u05d4\u05ea\u05d6\u05d4 \u05e0\u05e9\u05d1\u05e8\u05d4: \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 / thesis breaking: fresh lows or steep downtrend"
+    },
+    {
+      "ticker": "ABT",
+      "name": "Abbott Laboratories",
+      "entry_price": 90.5,
+      "entry_date": "2026-06-08",
+      "exit_price": 91.25,
+      "exit_date": "2026-06-09",
+      "shares": 11.049723756906078,
+      "cost_basis": 1000.0,
+      "pnl": 8.2872928176796,
+      "pnl_pct": 0.8287292817679592,
+      "sell_reason": "\u05d4\u05ea\u05d6\u05d4 \u05e0\u05e9\u05d1\u05e8\u05d4: \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 / thesis breaking: fresh lows or steep downtrend"
+    }
+  ],
   "updates_sent": []
 }
