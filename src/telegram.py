@@ -254,20 +254,23 @@ def compose_update(open_rows: list[dict], total_cost: float, total_value: float,
         lines.append(f"   הושקע סה\"כ / Total invested: ${total_invested_all:.0f}")
         if closed_count:
             lines.append(
-                f"   ממומש / Realized: {_pnl_emoji(realized_pnl)} ${realized_pnl:+.0f}"
+                f"   רווח/הפסד ממכירות שבוצעו / Closed trades P&L: "
+                f"{_pnl_emoji(realized_pnl)} ${realized_pnl:+.0f}"
                 f"  ({closed_count} עסקאות / trades)"
             )
         if open_rows:
             lines.append(
-                f"   לא-ממומש / Unrealized: {_pnl_emoji(unrealized_pnl)} ${unrealized_pnl:+.0f}"
+                f"   רווח/הפסד על פוזיציות פתוחות (על הנייר) / Open positions P&L (on paper): "
+                f"{_pnl_emoji(unrealized_pnl)} ${unrealized_pnl:+.0f}"
             )
         lines.append(
-            f"   {_pnl_emoji(combined_pnl)} סה\"כ P&L / Total P&L: "
+            f"   {_pnl_emoji(combined_pnl)} סה\"כ / Total: "
             f"${combined_pnl:+.0f} ({combined_pct:+.1f}%)"
         )
     elif closed_count:
         lines.append(
-            f"   ממומש / Realized: {_pnl_emoji(realized_pnl)} ${realized_pnl:+.0f}"
+            f"   רווח/הפסד ממכירות שבוצעו / Closed trades P&L: "
+            f"{_pnl_emoji(realized_pnl)} ${realized_pnl:+.0f}"
             f"  ({closed_count} עסקאות / trades)"
         )
 
