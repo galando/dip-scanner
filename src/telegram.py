@@ -233,7 +233,7 @@ def _portfolio_block(rows: list[dict], total_cost: float, total_value: float) ->
 
 def compose_update(open_rows: list[dict], total_cost: float, total_value: float,
                    realized_pnl: float, closed_count: int, date: str,
-                   day_n: int, total_days: int) -> str:
+                   day_n: int, total_days: int, total_invested_all: float = None) -> str:
     """Periodic (every-3-days) status update."""
     lines = [
         f"📲 עדכון סימולציה / Simulation update — {date}",
@@ -244,11 +244,36 @@ def compose_update(open_rows: list[dict], total_cost: float, total_value: float,
         lines += _portfolio_block(open_rows, total_cost, total_value)
     else:
         lines.append("\nאין פוזיציות פתוחות כרגע. (No open positions right now.)")
-    if closed_count:
+
+    unrealized_pnl = total_value - total_cost
+    combined_pnl = unrealized_pnl + realized_pnl
+    lines.append("")
+    lines.append("💼 סיכום תיק / Portfolio summary:")
+    if total_invested_all and total_invested_all > 0:
+        combined_pct = (combined_pnl / total_invested_all) * 100
+        lines.append(f"   הושקע סה\"כ / Total invested: ${total_invested_all:.0f}")
+        if closed_count:
+            lines.append(
+                f"   רווח/הפסד ממכירות שבוצעו / Closed trades P&L: "
+                f"{_pnl_emoji(realized_pnl)} ${realized_pnl:+.0f}"
+                f"  ({closed_count} עסקאות / trades)"
+            )
+        if open_rows:
+            lines.append(
+                f"   רווח/הפסד על פוזיציות פתוחות (על הנייר) / Open positions P&L (on paper): "
+                f"{_pnl_emoji(unrealized_pnl)} ${unrealized_pnl:+.0f}"
+            )
         lines.append(
-            f"💰 רווח/הפסד ממומש / Realized P&L: {_pnl_emoji(realized_pnl)} "
-            f"${realized_pnl:+.0f} ({closed_count} עסקאות סגורות / closed trades)"
+            f"   {_pnl_emoji(combined_pnl)} סה\"כ / Total: "
+            f"${combined_pnl:+.0f} ({combined_pct:+.1f}%)"
         )
+    elif closed_count:
+        lines.append(
+            f"   רווח/הפסד ממכירות שבוצעו / Closed trades P&L: "
+            f"{_pnl_emoji(realized_pnl)} ${realized_pnl:+.0f}"
+            f"  ({closed_count} עסקאות / trades)"
+        )
+
     lines.append("\nℹ️ סימולציה בלבד. (Simulation only — not investment advice.)")
     return "\n".join(lines)
 

@@ -275,7 +275,7 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
                 "ticker": pos["ticker"], "name": pos["name"],
                 "entry_price": pos["entry_price"], "entry_date": pos["entry_date"],
                 "exit_price": current_price, "exit_date": today.isoformat(),
-                "shares": pos["shares"], "pnl": pnl,
+                "shares": pos["shares"], "cost_basis": pos["cost_basis"], "pnl": pnl,
                 "pnl_pct": (current_price / pos["entry_price"] - 1.0) * 100.0,
                 "sell_reason": reason,
             })
@@ -309,6 +309,8 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
     total_cost = sum(p["cost_basis"] for p in state["positions"])
     total_value = sum(p["cost_basis"] + r["pnl"] for p, r in zip(state["positions"], open_rows))
     realized_pnl = sum(c["pnl"] for c in state["closed"])
+    closed_invested = sum(c.get("cost_basis", cfg.SIM_CASH_PER_STOCK) for c in state["closed"])
+    total_invested_all = total_cost + closed_invested
 
     # --- 4) Notifications ---
     if (buys or sells) and not is_final:
@@ -346,6 +348,7 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
         _send(telegram.compose_update(
             open_rows, total_cost, total_value, realized_pnl,
             len(state["closed"]), today.isoformat(), day_n, total_days,
+            total_invested_all=total_invested_all,
         ))
         state["updates_sent"].extend(m.isoformat() for m in due)
 
