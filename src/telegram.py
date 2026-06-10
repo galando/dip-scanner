@@ -190,7 +190,10 @@ def _pnl_emoji(pct: float) -> str:
     return "🟢" if pct > 0 else ("🔴" if pct < 0 else "⚪")
 
 
-def compose_trade_notice(buys: list[dict], sells: list[dict], date: str) -> str:
+def compose_trade_notice(buys: list[dict], sells: list[dict], date: str,
+                         open_rows: list[dict] = None, total_cost: float = 0,
+                         total_value: float = 0, realized_pnl: float = 0,
+                         total_invested_all: float = 0) -> str:
     """Notification sent whenever the bot buys or sells mid-month, with reasons."""
     lines = [f"🔁 פעולת מסחר בסימולציה / Simulation trade — {date}"]
     if sells:
@@ -210,6 +213,24 @@ def compose_trade_notice(buys: list[dict], sells: list[dict], date: str) -> str:
                 f"({b['shares']:.3f} מניות / shares)"
             )
             lines.append(_why_bought_line(b))
+    if open_rows is not None:
+        unrealized_pnl = total_value - total_cost
+        combined_pnl = unrealized_pnl + realized_pnl
+        lines.append("\n💼 מצב תיק אחרי הפעולה / Portfolio after trade:")
+        if open_rows:
+            lines += _portfolio_block(open_rows, total_cost, total_value)
+        else:
+            lines.append("   אין פוזיציות פתוחות. (No open positions.)")
+        if total_invested_all > 0:
+            combined_pct = (combined_pnl / total_invested_all) * 100
+            if realized_pnl != 0:
+                lines.append(
+                    f"   רווח/הפסד ממכירות שבוצעו: {_pnl_emoji(realized_pnl)} ${realized_pnl:+.0f}"
+                )
+            lines.append(
+                f"   {_pnl_emoji(combined_pnl)} סה\"כ / Total: "
+                f"${combined_pnl:+.0f} ({combined_pct:+.1f}%)"
+            )
     lines.append("\nℹ️ סימולציה בלבד. (Simulation only — not investment advice.)")
     return "\n".join(lines)
 
