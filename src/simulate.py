@@ -144,11 +144,18 @@ def evaluate_exit(pos: dict, prices_df, cfg) -> tuple[bool, str, float]:
         return True, (f"ההתאוששות הושלמה: RSI חזר ל-{current_rsi:.0f} ({pnl_pct:+.1f}%) / "
                       f"bounce done, RSI back to {current_rsi:.0f} ({pnl_pct:+.1f}%)"), current_price
 
-    # 4) Thesis breaking — a fresh price-based trap appeared (new lows / downtrend / gap-down).
-    passed, _ = gates.gate_3_trap({}, prices_df, cfg, trap_behavior="suppress")
-    if not passed:
-        return True, ("התזה נשברה: שפל חדש / מגמת ירידה / thesis breaking: "
-                      "fresh lows or steep downtrend"), current_price
+    # 4) Thesis breaking — a fresh price-based trap appeared (new lows / downtrend / gap-down),
+    # but only if the position is already down enough to confirm the dip is continuing.
+    # A tiny dip below entry on day 1 should not trigger this — we need real confirmation.
+    if pnl_pct <= -cfg.SIM_THESIS_BREAK_MIN_LOSS_PCT:
+        passed, _ = gates.gate_3_trap({}, prices_df, cfg, trap_behavior="suppress")
+        if not passed:
+            return True, (
+                f"הדיפ לא נגמר: המניה ירדה {pnl_pct:.1f}% מהקנייה ויצרה שפל חדש / מגמת ירידה חדה — "
+                f"הסיגנל שבגללו קנינו כבר לא תקף. עדיף לצאת עכשיו לפני הפסד גדול יותר. "
+                f"(Dip not over: down {pnl_pct:.1f}% from entry + fresh lows or steep downtrend — "
+                f"original buy signal is no longer valid)"
+            ), current_price
 
     return False, "", current_price
 

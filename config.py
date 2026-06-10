@@ -47,3 +47,4 @@ SIM_UPDATE_INTERVAL_DAYS = 3         # Send a status update every N days
 SIM_TAKE_PROFIT_PCT = 12.0           # SELL: recovered >= X% from entry (target hit)
 SIM_STOP_LOSS_PCT = 12.0             # SELL: fell >= X% from entry (thesis failed)
 SIM_RSI_EXIT = 60.0                  # SELL: RSI recovered above this (bounce done)
+SIM_THESIS_BREAK_MIN_LOSS_PCT = 5.0  # Thesis breaking only triggers if also down >= X% from entry
