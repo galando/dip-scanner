@@ -186,6 +186,84 @@
         ],
         "regime": "RISK_ON"
       }
+    },
+    {
+      "ticker": "NFLX",
+      "name": "Netflix, Inc.",
+      "entry_price": 82.0,
+      "entry_date": "2026-06-10",
+      "shares": 12.195121951219512,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -38.8,
+        "rsi": 33.0,
+        "below_200dma": true,
+        "vol_adjusted_drop": 116.91,
+        "atr_distance": 4.46,
+        "stabilization_signals": [
+          "RSI turning up from oversold"
+        ],
+        "stabilization_count": 1,
+        "roe": 48.494998,
+        "op_margin": 32.303002,
+        "debt_eq": 53.788,
+        "mkt_cap": 345285492736,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "ABT",
+      "name": "Abbott Laboratories",
+      "entry_price": 89.16999816894531,
+      "entry_date": "2026-06-10",
+      "shares": 11.214534266394814,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -34.1,
+        "rsi": 49.9,
+        "below_200dma": true,
+        "vol_adjusted_drop": 138.9,
+        "atr_distance": 1.18,
+        "stabilization_signals": [
+          "higher low"
+        ],
+        "stabilization_count": 1,
+        "roe": 12.333999599999999,
+        "op_margin": 13.472000000000001,
+        "debt_eq": 64.773,
+        "mkt_cap": 155317469184,
+        "warnings": [
+          "\u05d9\u05e8\u05d9\u05d3\u05d4 \u05d1\u05e8\u05d5\u05d5\u05d7\u05d9\u05dd: -20% / Earnings down -20%",
+          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -3.4% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -3.4% in 10 days"
+        ],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "IDXX",
+      "name": "IDEXX Laboratories, Inc.",
+      "entry_price": 556.9400024414062,
+      "entry_date": "2026-06-10",
+      "shares": 1.7955255424577024,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -27.4,
+        "rsi": 48.5,
+        "below_200dma": true,
+        "vol_adjusted_drop": 65.45,
+        "atr_distance": 0.36,
+        "stabilization_signals": [
+          "higher low"
+        ],
+        "stabilization_count": 1,
+        "roe": 72.91499999999999,
+        "op_margin": 31.783,
+        "debt_eq": 71.04,
+        "mkt_cap": 43933097984,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
     }
   ],
   "closed": [
