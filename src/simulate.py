@@ -314,7 +314,11 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
 
     # --- 4) Notifications ---
     if (buys or sells) and not is_final:
-        _send(telegram.compose_trade_notice(buys, sells, today.isoformat()))
+        _send(telegram.compose_trade_notice(
+            buys, sells, today.isoformat(),
+            open_rows=open_rows, total_cost=total_cost, total_value=total_value,
+            realized_pnl=realized_pnl, total_invested_all=total_invested_all,
+        ))
 
     if is_final:
         # Close the book at the last price.
