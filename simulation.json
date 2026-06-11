@@ -57,56 +57,6 @@
       }
     },
     {
-      "ticker": "ADBE",
-      "name": "Adobe Inc.",
-      "entry_price": 244.99000549316406,
-      "entry_date": "2026-06-08",
-      "shares": 4.081799165590463,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -41.1,
-        "rsi": 46.6,
-        "below_200dma": true,
-        "vol_adjusted_drop": 121.28,
-        "atr_distance": 0.12,
-        "stabilization_signals": [
-          "higher low"
-        ],
-        "stabilization_count": 1,
-        "roe": 58.774,
-        "op_margin": 38.762,
-        "debt_eq": 58.34,
-        "mkt_cap": 99024961536,
-        "warnings": [],
-        "regime": "RISK_ON"
-      }
-    },
-    {
-      "ticker": "CRM",
-      "name": "Salesforce, Inc.",
-      "entry_price": 182.5500030517578,
-      "entry_date": "2026-06-08",
-      "shares": 5.477951154656915,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -32.9,
-        "rsi": 48.8,
-        "below_200dma": true,
-        "vol_adjusted_drop": 86.71,
-        "atr_distance": -0.15,
-        "stabilization_signals": [
-          "higher low"
-        ],
-        "stabilization_count": 1,
-        "roe": 16.908,
-        "op_margin": 21.8,
-        "debt_eq": 124.282,
-        "mkt_cap": 149508456448,
-        "warnings": [],
-        "regime": "RISK_ON"
-      }
-    },
-    {
       "ticker": "TMO",
       "name": "Thermo Fisher Scientific Inc",
       "entry_price": 469.6300048828125,
@@ -264,6 +214,56 @@
         "warnings": [],
         "regime": "RISK_ON"
       }
+    },
+    {
+      "ticker": "SPGI",
+      "name": "S&P Global Inc.",
+      "entry_price": 413.3399963378906,
+      "entry_date": "2026-06-11",
+      "shares": 2.419315838921467,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -26.1,
+        "rsi": 45.6,
+        "below_200dma": true,
+        "vol_adjusted_drop": 94.43,
+        "atr_distance": 0.96,
+        "stabilization_signals": [
+          "higher low"
+        ],
+        "stabilization_count": 1,
+        "roe": 13.939999,
+        "op_margin": 44.282,
+        "debt_eq": 38.392,
+        "mkt_cap": 122348642304,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "ICE",
+      "name": "Intercontinental Exchange Inc.",
+      "entry_price": 138.97999572753906,
+      "entry_date": "2026-06-11",
+      "shares": 7.195280117582049,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -25.6,
+        "rsi": 31.9,
+        "below_200dma": true,
+        "vol_adjusted_drop": 116.85,
+        "atr_distance": 4.03,
+        "stabilization_signals": [
+          "higher low"
+        ],
+        "stabilization_count": 1,
+        "roe": 13.852999999999998,
+        "op_margin": 57.306000000000004,
+        "debt_eq": 70.986,
+        "mkt_cap": 78594924544,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
     }
   ],
   "closed": [
@@ -292,7 +292,35 @@
       "pnl": 8.2872928176796,
       "pnl_pct": 0.8287292817679592,
       "sell_reason": "\u05d4\u05ea\u05d6\u05d4 \u05e0\u05e9\u05d1\u05e8\u05d4: \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 / thesis breaking: fresh lows or steep downtrend"
+    },
+    {
+      "ticker": "ADBE",
+      "name": "Adobe Inc.",
+      "entry_price": 244.99000549316406,
+      "entry_date": "2026-06-08",
+      "exit_price": 218.8000030517578,
+      "exit_date": "2026-06-11",
+      "shares": 4.081799165590463,
+      "cost_basis": 1000.0,
+      "pnl": -106.90233011214411,
+      "pnl_pct": -10.690233011214422,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -10.7% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -10.7% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "CRM",
+      "name": "Salesforce, Inc.",
+      "entry_price": 182.5500030517578,
+      "entry_date": "2026-06-08",
+      "exit_price": 166.4499969482422,
+      "exit_date": "2026-06-11",
+      "shares": 5.477951154656915,
+      "cost_basis": 1000.0,
+      "pnl": -88.19504702473671,
+      "pnl_pct": -8.81950470247368,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -8.8% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -8.8% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
     }
   ],
-  "updates_sent": []
+  "updates_sent": [
+    "2026-06-11"
+  ]
 }
