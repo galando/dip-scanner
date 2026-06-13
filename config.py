@@ -13,6 +13,10 @@ MAX_DEBT_EQUITY = 150.0     # Debt/equity maximum
 MIN_MKT_CAP = 10_000_000_000  # Market cap minimum ($10B)
 
 # --- Gate 2: Hard dip + stabilization ---
+# No S&P 500 component legitimately gaps 50 %+ in a single session; anything
+# beyond this is a data-feed artifact (split recorded twice, bad tick, etc.)
+# and will produce nonsense drawdown / vol figures for every downstream gate.
+MAX_SINGLE_DAY_MOVE_PCT = 50.0  # Reject price series containing a move this large
 MIN_DRAWDOWN = 25.0         # Drawdown from 52-week high minimum (%)
 RSI_OVERSOLD = 30.0         # RSI threshold for "oversold"
 LOOKBACK = 5                # Days to look back for RSI turning up

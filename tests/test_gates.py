@@ -168,6 +168,19 @@ class TestGate2DipAndStabilization:
         # If 2+ signals fire this may pass — that's fine, the point is the logic is checked
         assert isinstance(passed, bool)
 
+    def test_rejected_data_glitch_large_single_day_move(self):
+        """Price series with a 90% single-day drop (data artifact) is rejected before any gate."""
+        base = 100.0
+        # Normal history, then one session that plummets 90% — a yfinance bad tick
+        prices = [base] * 200 + [base * 0.10] + [base * 0.10] * 30
+        prices_df = _make_price_df(prices)
+        passed, details = gate_2_dip_and_stabilization(
+            prices_df, regime="RISK_ON", cfg=config
+        )
+        assert passed is False
+        assert "data quality" in details.get("reason", "").lower()
+        assert "bad tick" in details.get("reason", "").lower()
+
 
 class TestGate3Trap:
     """Scenario 4: Trap detection, Scenario 8: Earnings blackout."""

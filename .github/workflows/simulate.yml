@@ -1,10 +1,10 @@
 name: Monthly Simulation
 on:
   schedule:
-    # 21:45 UTC weekdays, just after the daily scan (after US close 16:00 ET).
-    # The script itself decides each day whether to buy, sell, post an update,
-    # or close the book — so a plain daily trigger is all it needs.
-    - cron: '45 21 * * 1-5'
+    # 20:45 UTC weekdays = 22:45 Amsterdam summer (CEST/UTC+2), 15 min after the
+    # daily scan (20:30 UTC). The script itself decides each day whether to buy,
+    # sell, post an update, or close the book — so a plain daily trigger is all it needs.
+    - cron: '45 20 * * 1-5'
   workflow_dispatch:           # manual run — also used to start the simulation today
     inputs:
       reset:
