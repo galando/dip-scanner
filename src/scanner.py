@@ -52,6 +52,7 @@ def run_scan() -> list[str]:
     dedup_state = state.load_state()
 
     alerted: list[str] = []
+    deduped: list[str] = []
 
     for ticker, prices_df in prices_map.items():
         try:
@@ -84,6 +85,7 @@ def run_scan() -> list[str]:
             # Dedup check
             if state.is_recently_alerted(ticker, dedup_state, config.DEDUP_DAYS):
                 logger.info("SKIP %s: recently alerted (dedup)", ticker)
+                deduped.append(ticker)
                 continue
 
             # Compose and send alert
@@ -120,6 +122,18 @@ def run_scan() -> list[str]:
 
     # Save dedup state
     state.save_state(dedup_state)
+
+    # Send daily summary when no new alerts fired so the user always hears something
+    if not alerted:
+        token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+        chat_ids = telegram.get_chat_ids()
+        if token and chat_ids:
+            summary = telegram.compose_daily_summary(
+                regime, len(prices_map), len(alerted), deduped
+            )
+            for cid in chat_ids:
+                telegram.send_alert(token, cid, summary)
+            logger.info("Daily summary sent to %d recipients", len(chat_ids))
 
     logger.info("=== Scan Complete: %d alerts sent ===", len(alerted))
     return alerted
