@@ -83,10 +83,30 @@ def gate_2_dip_and_stabilization(
 ) -> tuple[bool, dict]:
     """Gate 2: Hard dip (2a) + stabilization (2b).
 
+    Starts with a data-quality pre-check (gate 2-pre): rejects any price series
+    that contains a single-session move larger than MAX_SINGLE_DAY_MOVE_PCT.
+    No S&P 500 constituent legitimately moves that much in one day — such values
+    are data-feed artifacts (bad tick, split booked twice, etc.) that would make
+    the drawdown, vol, and RSI figures completely meaningless downstream.
+
     2a: drawdown >= MIN_DRAWDOWN, vol-adjusted drop, below 200dma
     2b: RSI turning up from oversold OR higher low OR consecutive up closes
     In RISK_OFF: require STABILIZATION_REQUIRED_RISK_OFF signals.
     """
+    # --- Gate 2-pre: data quality ---
+    # A single-day close-to-close change beyond the threshold means the price
+    # series is corrupted. Reject early so no misleading alert is ever sent.
+    if len(prices) >= 2:
+        max_move = float(prices["Close"].pct_change().abs().max() * 100)
+        if max_move > cfg.MAX_SINGLE_DAY_MOVE_PCT:
+            return False, {
+                "reason": (
+                    f"Data quality: single-day move of {max_move:.0f}% detected "
+                    f"(threshold {cfg.MAX_SINGLE_DAY_MOVE_PCT:.0f}%) — "
+                    f"likely a bad tick or split error in the price feed, not a real event"
+                )
+            }
+
     details = {}
 
     # --- Compute indicators ---
