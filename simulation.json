@@ -32,31 +32,6 @@
       }
     },
     {
-      "ticker": "ACN",
-      "name": "Accenture plc",
-      "entry_price": 174.42999267578125,
-      "entry_date": "2026-06-08",
-      "shares": 5.732959020750134,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -44.9,
-        "rsi": 44.7,
-        "below_200dma": true,
-        "vol_adjusted_drop": 124.16,
-        "atr_distance": 1.11,
-        "stabilization_signals": [
-          "higher low"
-        ],
-        "stabilization_count": 1,
-        "roe": 24.762999999999998,
-        "op_margin": 13.819,
-        "debt_eq": 25.469,
-        "mkt_cap": 107350343680,
-        "warnings": [],
-        "regime": "RISK_ON"
-      }
-    },
-    {
       "ticker": "TMO",
       "name": "Thermo Fisher Scientific Inc",
       "entry_price": 469.6300048828125,
@@ -264,6 +239,31 @@
         "warnings": [],
         "regime": "RISK_ON"
       }
+    },
+    {
+      "ticker": "MSFT",
+      "name": "Microsoft Corporation",
+      "entry_price": 399.760009765625,
+      "entry_date": "2026-06-15",
+      "shares": 2.5015008394318614,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -25.8,
+        "rsi": 42.8,
+        "below_200dma": true,
+        "vol_adjusted_drop": 100.84,
+        "atr_distance": 0.99,
+        "stabilization_signals": [
+          "consecutive up closes"
+        ],
+        "stabilization_count": 1,
+        "roe": 34.013999,
+        "op_margin": 46.326,
+        "debt_eq": 30.271,
+        "mkt_cap": 2969591349248,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
     }
   ],
   "closed": [
@@ -318,9 +318,23 @@
       "pnl": -88.19504702473671,
       "pnl_pct": -8.81950470247368,
       "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -8.8% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -8.8% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "ACN",
+      "name": "Accenture plc",
+      "entry_price": 174.42999267578125,
+      "entry_date": "2026-06-08",
+      "exit_price": 165.36000061035156,
+      "exit_date": "2026-06-15",
+      "shares": 5.732959020750134,
+      "cost_basis": 1000.0,
+      "pnl": -51.997892829637294,
+      "pnl_pct": -5.19978928296373,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.2% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.2% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
     }
   ],
   "updates_sent": [
-    "2026-06-11"
+    "2026-06-11",
+    "2026-06-14"
   ]
 }
