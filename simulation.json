@@ -6,32 +6,6 @@
   "max_positions": 10,
   "positions": [
     {
-      "ticker": "NOW",
-      "name": "ServiceNow, Inc.",
-      "entry_price": 114.19000244140625,
-      "entry_date": "2026-06-08",
-      "shares": 8.757334080215342,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -45.3,
-        "rsi": 55.7,
-        "below_200dma": true,
-        "vol_adjusted_drop": 90.89,
-        "atr_distance": -1.98,
-        "stabilization_signals": [
-          "higher low",
-          "consecutive up closes"
-        ],
-        "stabilization_count": 2,
-        "roe": 16.07,
-        "op_margin": 13.342,
-        "debt_eq": 20.728,
-        "mkt_cap": 117765062656,
-        "warnings": [],
-        "regime": "RISK_ON"
-      }
-    },
-    {
       "ticker": "TMO",
       "name": "Thermo Fisher Scientific Inc",
       "entry_price": 469.6300048828125,
@@ -109,31 +83,6 @@
           "\u05d9\u05e8\u05d9\u05d3\u05d4 \u05d1\u05e8\u05d5\u05d5\u05d7\u05d9\u05dd: -33% / Earnings down -33%",
           "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -3.2% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -3.2% in 10 days"
         ],
-        "regime": "RISK_ON"
-      }
-    },
-    {
-      "ticker": "NFLX",
-      "name": "Netflix, Inc.",
-      "entry_price": 82.0,
-      "entry_date": "2026-06-10",
-      "shares": 12.195121951219512,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -38.8,
-        "rsi": 33.0,
-        "below_200dma": true,
-        "vol_adjusted_drop": 116.91,
-        "atr_distance": 4.46,
-        "stabilization_signals": [
-          "RSI turning up from oversold"
-        ],
-        "stabilization_count": 1,
-        "roe": 48.494998,
-        "op_margin": 32.303002,
-        "debt_eq": 53.788,
-        "mkt_cap": 345285492736,
-        "warnings": [],
         "regime": "RISK_ON"
       }
     },
@@ -239,31 +188,6 @@
         "warnings": [],
         "regime": "RISK_ON"
       }
-    },
-    {
-      "ticker": "MSFT",
-      "name": "Microsoft Corporation",
-      "entry_price": 399.760009765625,
-      "entry_date": "2026-06-15",
-      "shares": 2.5015008394318614,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -25.8,
-        "rsi": 42.8,
-        "below_200dma": true,
-        "vol_adjusted_drop": 100.84,
-        "atr_distance": 0.99,
-        "stabilization_signals": [
-          "consecutive up closes"
-        ],
-        "stabilization_count": 1,
-        "roe": 34.013999,
-        "op_margin": 46.326,
-        "debt_eq": 30.271,
-        "mkt_cap": 2969591349248,
-        "warnings": [],
-        "regime": "RISK_ON"
-      }
     }
   ],
   "closed": [
@@ -331,10 +255,50 @@
       "pnl": -51.997892829637294,
       "pnl_pct": -5.19978928296373,
       "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.2% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.2% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "NOW",
+      "name": "ServiceNow, Inc.",
+      "entry_price": 114.19000244140625,
+      "entry_date": "2026-06-08",
+      "exit_price": 95.4800033569336,
+      "exit_date": "2026-06-17",
+      "shares": 8.757334080215342,
+      "cost_basis": 1000.0,
+      "pnl": -163.84971262325018,
+      "pnl_pct": -16.38497126232502,
+      "sell_reason": "\u05e1\u05d8\u05d5\u05e4-\u05dc\u05d5\u05e1: \u05d9\u05e8\u05d3\u05d4 -16.4% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 / stop-loss, down -16.4% from entry"
+    },
+    {
+      "ticker": "NFLX",
+      "name": "Netflix, Inc.",
+      "entry_price": 82.0,
+      "entry_date": "2026-06-10",
+      "exit_price": 76.95999908447266,
+      "exit_date": "2026-06-17",
+      "shares": 12.195121951219512,
+      "cost_basis": 1000.0,
+      "pnl": -61.46342579911391,
+      "pnl_pct": -6.146342579911391,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -6.1% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -6.1% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "MSFT",
+      "name": "Microsoft Corporation",
+      "entry_price": 399.760009765625,
+      "entry_date": "2026-06-15",
+      "exit_price": 378.9100036621094,
+      "exit_date": "2026-06-17",
+      "shares": 2.5015008394318614,
+      "cost_basis": 1000.0,
+      "pnl": -52.156307770103695,
+      "pnl_pct": -5.215630777010372,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.2% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.2% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
     }
   ],
   "updates_sent": [
     "2026-06-11",
-    "2026-06-14"
+    "2026-06-14",
+    "2026-06-17"
   ]
 }
