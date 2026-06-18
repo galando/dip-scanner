@@ -59,34 +59,6 @@
       }
     },
     {
-      "ticker": "CMCSA",
-      "name": "Comcast Corporation",
-      "entry_price": 23.850000381469727,
-      "entry_date": "2026-06-09",
-      "shares": 41.92872050337369,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -26.9,
-        "rsi": 33.7,
-        "below_200dma": true,
-        "vol_adjusted_drop": 94.92,
-        "atr_distance": 3.93,
-        "stabilization_signals": [
-          "consecutive up closes"
-        ],
-        "stabilization_count": 1,
-        "roe": 20.918,
-        "op_margin": 13.145000000000001,
-        "debt_eq": 106.858,
-        "mkt_cap": 85197651968,
-        "warnings": [
-          "\u05d9\u05e8\u05d9\u05d3\u05d4 \u05d1\u05e8\u05d5\u05d5\u05d7\u05d9\u05dd: -33% / Earnings down -33%",
-          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -3.2% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -3.2% in 10 days"
-        ],
-        "regime": "RISK_ON"
-      }
-    },
-    {
       "ticker": "ABT",
       "name": "Abbott Laboratories",
       "entry_price": 89.16999816894531,
@@ -185,6 +157,32 @@
         "op_margin": 57.306000000000004,
         "debt_eq": 70.986,
         "mkt_cap": 78594924544,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "META",
+      "name": "Meta Platforms, Inc.",
+      "entry_price": 577.219970703125,
+      "entry_date": "2026-06-18",
+      "shares": 1.7324417912669876,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -26.7,
+        "rsi": 43.0,
+        "below_200dma": true,
+        "vol_adjusted_drop": 73.64,
+        "atr_distance": 2.19,
+        "stabilization_signals": [
+          "higher low",
+          "consecutive up closes"
+        ],
+        "stabilization_count": 2,
+        "roe": 32.930002,
+        "op_margin": 40.617,
+        "debt_eq": 35.608,
+        "mkt_cap": 1465228591104,
         "warnings": [],
         "regime": "RISK_ON"
       }
@@ -294,6 +292,19 @@
       "pnl": -52.156307770103695,
       "pnl_pct": -5.215630777010372,
       "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.2% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.2% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "CMCSA",
+      "name": "Comcast Corporation",
+      "entry_price": 23.850000381469727,
+      "entry_date": "2026-06-09",
+      "exit_price": 22.43000030517578,
+      "exit_date": "2026-06-18",
+      "shares": 41.92872050337369,
+      "cost_basis": 1000.0,
+      "pnl": -59.5387863136981,
+      "pnl_pct": -5.953878631369813,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -6.0% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -6.0% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
     }
   ],
   "updates_sent": [
