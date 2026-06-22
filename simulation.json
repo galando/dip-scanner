@@ -137,31 +137,6 @@
       }
     },
     {
-      "ticker": "ICE",
-      "name": "Intercontinental Exchange Inc.",
-      "entry_price": 138.97999572753906,
-      "entry_date": "2026-06-11",
-      "shares": 7.195280117582049,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -25.6,
-        "rsi": 31.9,
-        "below_200dma": true,
-        "vol_adjusted_drop": 116.85,
-        "atr_distance": 4.03,
-        "stabilization_signals": [
-          "higher low"
-        ],
-        "stabilization_count": 1,
-        "roe": 13.852999999999998,
-        "op_margin": 57.306000000000004,
-        "debt_eq": 70.986,
-        "mkt_cap": 78594924544,
-        "warnings": [],
-        "regime": "RISK_ON"
-      }
-    },
-    {
       "ticker": "META",
       "name": "Meta Platforms, Inc.",
       "entry_price": 577.219970703125,
@@ -305,11 +280,25 @@
       "pnl": -59.5387863136981,
       "pnl_pct": -5.953878631369813,
       "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -6.0% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -6.0% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "ICE",
+      "name": "Intercontinental Exchange Inc.",
+      "entry_price": 138.97999572753906,
+      "entry_date": "2026-06-11",
+      "exit_price": 131.33999633789062,
+      "exit_date": "2026-06-22",
+      "shares": 7.195280117582049,
+      "cost_basis": 1000.0,
+      "pnl": -54.97193570667639,
+      "pnl_pct": -5.497193570667635,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.5% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.5% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
     }
   ],
   "updates_sent": [
     "2026-06-11",
     "2026-06-14",
-    "2026-06-17"
+    "2026-06-17",
+    "2026-06-20"
   ]
 }
