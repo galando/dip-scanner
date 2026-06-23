@@ -31,34 +31,6 @@
       }
     },
     {
-      "ticker": "NKE",
-      "name": "Nike, Inc.",
-      "entry_price": 44.650001525878906,
-      "entry_date": "2026-06-09",
-      "shares": 22.396415807968232,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -42.1,
-        "rsi": 52.1,
-        "below_200dma": true,
-        "vol_adjusted_drop": 109.99,
-        "atr_distance": -0.36,
-        "stabilization_signals": [
-          "consecutive up closes"
-        ],
-        "stabilization_count": 1,
-        "roe": 16.016,
-        "op_margin": 6.941999999999999,
-        "debt_eq": 79.333,
-        "mkt_cap": 66121609216,
-        "warnings": [
-          "\u05d9\u05e8\u05d9\u05d3\u05d4 \u05d1\u05e8\u05d5\u05d5\u05d7\u05d9\u05dd: -35% / Earnings down -35%",
-          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -3.5% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -3.5% in 10 days"
-        ],
-        "regime": "RISK_ON"
-      }
-    },
-    {
       "ticker": "ABT",
       "name": "Abbott Laboratories",
       "entry_price": 89.16999816894531,
@@ -293,12 +265,26 @@
       "pnl": -54.97193570667639,
       "pnl_pct": -5.497193570667635,
       "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.5% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.5% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "NKE",
+      "name": "Nike, Inc.",
+      "entry_price": 44.650001525878906,
+      "entry_date": "2026-06-09",
+      "exit_price": 42.380001068115234,
+      "exit_date": "2026-06-23",
+      "shares": 22.396415807968232,
+      "cost_basis": 1000.0,
+      "pnl": -50.83987413635339,
+      "pnl_pct": -5.083987413635338,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.1% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.1% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
     }
   ],
   "updates_sent": [
     "2026-06-11",
     "2026-06-14",
     "2026-06-17",
-    "2026-06-20"
+    "2026-06-20",
+    "2026-06-23"
   ]
 }
