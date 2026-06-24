@@ -133,6 +133,60 @@
         "warnings": [],
         "regime": "RISK_ON"
       }
+    },
+    {
+      "ticker": "INTU",
+      "name": "Intuit Inc.",
+      "entry_price": 262.2349853515625,
+      "entry_date": "2026-06-24",
+      "shares": 3.8133737138824584,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -67.3,
+        "rsi": 31.8,
+        "below_200dma": true,
+        "vol_adjusted_drop": 150.04,
+        "atr_distance": 5.3,
+        "stabilization_signals": [
+          "consecutive up closes"
+        ],
+        "stabilization_count": 1,
+        "roe": 22.496,
+        "op_margin": 46.974,
+        "debt_eq": 33.448,
+        "mkt_cap": 71730970624,
+        "warnings": [
+          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -6.9% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -6.9% in 10 days"
+        ],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "ACN",
+      "name": "Accenture plc",
+      "entry_price": 129.14999389648438,
+      "entry_date": "2026-06-24",
+      "shares": 7.742934938127173,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -57.1,
+        "rsi": 24.7,
+        "below_200dma": true,
+        "vol_adjusted_drop": 142.2,
+        "atr_distance": 5.22,
+        "stabilization_signals": [
+          "consecutive up closes"
+        ],
+        "stabilization_count": 1,
+        "roe": 24.406,
+        "op_margin": 16.964000000000002,
+        "debt_eq": 25.035,
+        "mkt_cap": 79032311808,
+        "warnings": [
+          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -4.7% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -4.7% in 10 days"
+        ],
+        "regime": "RISK_ON"
+      }
     }
   ],
   "closed": [
