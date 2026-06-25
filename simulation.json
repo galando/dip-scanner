@@ -6,59 +6,6 @@
   "max_positions": 10,
   "positions": [
     {
-      "ticker": "TMO",
-      "name": "Thermo Fisher Scientific Inc",
-      "entry_price": 469.6300048828125,
-      "entry_date": "2026-06-08",
-      "shares": 2.1293358380062015,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -26.5,
-        "rsi": 49.1,
-        "below_200dma": true,
-        "vol_adjusted_drop": 85.31,
-        "atr_distance": 0.67,
-        "stabilization_signals": [
-          "higher low"
-        ],
-        "stabilization_count": 1,
-        "roe": 13.523,
-        "op_margin": 17.892,
-        "debt_eq": 82.903,
-        "mkt_cap": 174524596224,
-        "warnings": [],
-        "regime": "RISK_ON"
-      }
-    },
-    {
-      "ticker": "ABT",
-      "name": "Abbott Laboratories",
-      "entry_price": 89.16999816894531,
-      "entry_date": "2026-06-10",
-      "shares": 11.214534266394814,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -34.1,
-        "rsi": 49.9,
-        "below_200dma": true,
-        "vol_adjusted_drop": 138.9,
-        "atr_distance": 1.18,
-        "stabilization_signals": [
-          "higher low"
-        ],
-        "stabilization_count": 1,
-        "roe": 12.333999599999999,
-        "op_margin": 13.472000000000001,
-        "debt_eq": 64.773,
-        "mkt_cap": 155317469184,
-        "warnings": [
-          "\u05d9\u05e8\u05d9\u05d3\u05d4 \u05d1\u05e8\u05d5\u05d5\u05d7\u05d9\u05dd: -20% / Earnings down -20%",
-          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -3.4% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -3.4% in 10 days"
-        ],
-        "regime": "RISK_ON"
-      }
-    },
-    {
       "ticker": "IDXX",
       "name": "IDEXX Laboratories, Inc.",
       "entry_price": 556.9400024414062,
@@ -104,32 +51,6 @@
         "op_margin": 44.282,
         "debt_eq": 38.392,
         "mkt_cap": 122348642304,
-        "warnings": [],
-        "regime": "RISK_ON"
-      }
-    },
-    {
-      "ticker": "META",
-      "name": "Meta Platforms, Inc.",
-      "entry_price": 577.219970703125,
-      "entry_date": "2026-06-18",
-      "shares": 1.7324417912669876,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -26.7,
-        "rsi": 43.0,
-        "below_200dma": true,
-        "vol_adjusted_drop": 73.64,
-        "atr_distance": 2.19,
-        "stabilization_signals": [
-          "higher low",
-          "consecutive up closes"
-        ],
-        "stabilization_count": 2,
-        "roe": 32.930002,
-        "op_margin": 40.617,
-        "debt_eq": 35.608,
-        "mkt_cap": 1465228591104,
         "warnings": [],
         "regime": "RISK_ON"
       }
@@ -184,6 +105,35 @@
         "mkt_cap": 79032311808,
         "warnings": [
           "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -4.7% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -4.7% in 10 days"
+        ],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "CMCSA",
+      "name": "Comcast Corporation",
+      "entry_price": 22.690000534057617,
+      "entry_date": "2026-06-25",
+      "shares": 44.07227749946516,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -30.4,
+        "rsi": 33.6,
+        "below_200dma": true,
+        "vol_adjusted_drop": 105.98,
+        "atr_distance": 4.3,
+        "stabilization_signals": [
+          "RSI turning up from oversold",
+          "consecutive up closes"
+        ],
+        "stabilization_count": 2,
+        "roe": 20.918,
+        "op_margin": 13.145000000000001,
+        "debt_eq": 106.858,
+        "mkt_cap": 81053868032,
+        "warnings": [
+          "\u05d9\u05e8\u05d9\u05d3\u05d4 \u05d1\u05e8\u05d5\u05d5\u05d7\u05d9\u05dd: -33% / Earnings down -33%",
+          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -3.7% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -3.7% in 10 days"
         ],
         "regime": "RISK_ON"
       }
@@ -332,6 +282,45 @@
       "pnl": -50.83987413635339,
       "pnl_pct": -5.083987413635338,
       "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.1% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.1% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "TMO",
+      "name": "Thermo Fisher Scientific Inc",
+      "entry_price": 469.6300048828125,
+      "entry_date": "2026-06-08",
+      "exit_price": 505.75,
+      "exit_date": "2026-06-25",
+      "shares": 2.1293358380062015,
+      "cost_basis": 1000.0,
+      "pnl": 76.91160007163649,
+      "pnl_pct": 7.691160007163633,
+      "sell_reason": "\u05d4\u05d4\u05ea\u05d0\u05d5\u05e9\u05e9\u05d5\u05ea \u05d4\u05d5\u05e9\u05dc\u05de\u05d4: RSI \u05d7\u05d6\u05e8 \u05dc-64 (+7.7%) / bounce done, RSI back to 64 (+7.7%)"
+    },
+    {
+      "ticker": "ABT",
+      "name": "Abbott Laboratories",
+      "entry_price": 89.16999816894531,
+      "entry_date": "2026-06-10",
+      "exit_price": 93.23999786376953,
+      "exit_date": "2026-06-25",
+      "shares": 11.214534266394814,
+      "cost_basis": 1000.0,
+      "pnl": 45.64315104182265,
+      "pnl_pct": 4.5643151041822705,
+      "sell_reason": "\u05d4\u05d4\u05ea\u05d0\u05d5\u05e9\u05e9\u05d5\u05ea \u05d4\u05d5\u05e9\u05dc\u05de\u05d4: RSI \u05d7\u05d6\u05e8 \u05dc-61 (+4.6%) / bounce done, RSI back to 61 (+4.6%)"
+    },
+    {
+      "ticker": "META",
+      "name": "Meta Platforms, Inc.",
+      "entry_price": 577.219970703125,
+      "entry_date": "2026-06-18",
+      "exit_price": 542.8699951171875,
+      "exit_date": "2026-06-25",
+      "shares": 1.7324417912669876,
+      "cost_basis": 1000.0,
+      "pnl": -59.509333234078895,
+      "pnl_pct": -5.950933323407881,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -6.0% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -6.0% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
     }
   ],
   "updates_sent": [
