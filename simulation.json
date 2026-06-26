@@ -137,6 +137,140 @@
         ],
         "regime": "RISK_ON"
       }
+    },
+    {
+      "ticker": "ADBE",
+      "name": "Adobe Inc.",
+      "entry_price": 202.72999572753906,
+      "entry_date": "2026-06-26",
+      "shares": 4.932669171186486,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -48.3,
+        "rsi": 37.0,
+        "below_200dma": true,
+        "vol_adjusted_drop": 137.21,
+        "atr_distance": 3.6,
+        "stabilization_signals": [
+          "RSI turning up from oversold",
+          "higher low"
+        ],
+        "stabilization_count": 2,
+        "roe": 62.953996999999994,
+        "op_margin": 35.327998,
+        "debt_eq": 61.443,
+        "mkt_cap": 80585170944,
+        "warnings": [
+          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -3.2% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -3.2% in 10 days"
+        ],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "NFLX",
+      "name": "Netflix, Inc.",
+      "entry_price": 73.80999755859375,
+      "entry_date": "2026-06-26",
+      "shares": 13.548300136524924,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -44.9,
+        "rsi": 31.5,
+        "below_200dma": true,
+        "vol_adjusted_drop": 132.13,
+        "atr_distance": 4.96,
+        "stabilization_signals": [
+          "RSI turning up from oversold"
+        ],
+        "stabilization_count": 1,
+        "roe": 48.494998,
+        "op_margin": 32.303002,
+        "debt_eq": 53.788,
+        "mkt_cap": 310799040512,
+        "warnings": [
+          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -5.6% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -5.6% in 10 days"
+        ],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "CRM",
+      "name": "Salesforce, Inc.",
+      "entry_price": 158.3699951171875,
+      "entry_date": "2026-06-26",
+      "shares": 6.314327403117237,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -41.6,
+        "rsi": 41.4,
+        "below_200dma": true,
+        "vol_adjusted_drop": 107.71,
+        "atr_distance": 2.32,
+        "stabilization_signals": [
+          "RSI turning up from oversold",
+          "consecutive up closes"
+        ],
+        "stabilization_count": 2,
+        "roe": 16.908,
+        "op_margin": 21.8,
+        "debt_eq": 124.282,
+        "mkt_cap": 129705025536,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "MSFT",
+      "name": "Microsoft Corporation",
+      "entry_price": 372.9700012207031,
+      "entry_date": "2026-06-26",
+      "shares": 2.6811807832455004,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -30.8,
+        "rsi": 40.5,
+        "below_200dma": true,
+        "vol_adjusted_drop": 114.09,
+        "atr_distance": 2.84,
+        "stabilization_signals": [
+          "RSI turning up from oversold"
+        ],
+        "stabilization_count": 1,
+        "roe": 34.013999,
+        "op_margin": 46.326,
+        "debt_eq": 30.271,
+        "mkt_cap": 2770583420928,
+        "warnings": [],
+        "regime": "RISK_ON"
+      }
+    },
+    {
+      "ticker": "ABT",
+      "name": "Abbott Laboratories",
+      "entry_price": 94.12000274658203,
+      "entry_date": "2026-06-26",
+      "shares": 10.62473407159261,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -30.0,
+        "rsi": 63.3,
+        "below_200dma": true,
+        "vol_adjusted_drop": 121.26,
+        "atr_distance": -2.14,
+        "stabilization_signals": [
+          "higher low",
+          "consecutive up closes"
+        ],
+        "stabilization_count": 2,
+        "roe": 12.333999599999999,
+        "op_margin": 13.472000000000001,
+        "debt_eq": 64.773,
+        "mkt_cap": 163939450880,
+        "warnings": [
+          "\u05d9\u05e8\u05d9\u05d3\u05d4 \u05d1\u05e8\u05d5\u05d5\u05d7\u05d9\u05dd: -20% / Earnings down -20%"
+        ],
+        "regime": "RISK_ON"
+      }
     }
   ],
   "closed": [
@@ -328,6 +462,7 @@
     "2026-06-14",
     "2026-06-17",
     "2026-06-20",
-    "2026-06-23"
+    "2026-06-23",
+    "2026-06-26"
   ]
 }
