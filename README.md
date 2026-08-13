@@ -187,7 +187,8 @@ GitHub Actions (daily cron, after US close)
         v
    scanner.py
         |
-        +--> universe.py   : S&P 500 ticker list
+        +--> universe.py   : S&P 500 list (Wikipedia -> cached copy -> full
+        |                    static fallback; partial lists are never trusted)
         +--> data.py       : price history + fundamentals via yfinance
         +--> regime.py     : SPY vs 200dma (RISK_ON / RISK_OFF)
         +--> indicators.py : RSI, ATR, MAs, drawdown, stabilization, volume
