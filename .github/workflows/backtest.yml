@@ -1,0 +1,36 @@
+name: Backtest
+on:
+  workflow_dispatch:           # on-demand only — this is an analysis job, not a daily one
+    inputs:
+      period:
+        description: 'History period to replay (e.g. 2y, 5y, max)'
+        type: string
+        default: '5y'
+      max_tickers:
+        description: 'Cap the universe for runtime (0 = full S&P 500)'
+        type: string
+        default: '100'
+      send:
+        description: 'Also send the report via Telegram'
+        type: boolean
+        default: true
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Run backtest
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PYTHONPATH: .
+        run: |
+          python -m src.backtest \
+            --period "${{ inputs.period }}" \
+            --max-tickers "${{ inputs.max_tickers }}" \
+            ${{ inputs.send == true && '--send' || '' }}

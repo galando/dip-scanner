@@ -111,6 +111,62 @@ def detect_consecutive_up_closes(df: pd.DataFrame, n: int = 2, lookback: int = 1
     return bool(all_up and low_close <= closes[-n])
 
 
+def detect_volume_confirmation(
+    df: pd.DataFrame, n: int = 2, avg_window: int = 20, mult: float = 1.2
+) -> bool:
+    """Detect buyers stepping in: an up close with elevated recent volume.
+
+    True when the last close is an up close AND the average volume of the
+    last `n` sessions exceeds `mult` times the preceding `avg_window`-session
+    average. A bounce on quiet volume is often just noise; a bounce on heavy
+    volume is real demand absorbing the selling.
+    """
+    if len(df) < avg_window + n + 1:
+        return False
+
+    closes = df["Close"].values
+    vols = df["Volume"].values
+
+    baseline = vols[-(avg_window + n):-n].mean()
+    if not baseline > 0 or np.isnan(baseline):
+        return False
+
+    up_close = closes[-1] > closes[-2]
+    recent_vol = vols[-n:].mean()
+    return bool(up_close and recent_vol >= mult * baseline)
+
+
+def compute_relative_strength(
+    df: pd.DataFrame, benchmark_df: pd.DataFrame | None, lookback: int = 20
+) -> float | None:
+    """Stock return minus benchmark return over the last `lookback` sessions.
+
+    Returned in percentage points. Positive = the stock is already holding up
+    better than the market — the kind of dip that recovers first. None when
+    the benchmark is unavailable or history is too short.
+    """
+    if benchmark_df is None or len(df) < lookback + 1 or len(benchmark_df) < lookback + 1:
+        return None
+
+    r_stock = df["Close"].iloc[-1] / df["Close"].iloc[-(lookback + 1)] - 1.0
+    r_bench = benchmark_df["Close"].iloc[-1] / benchmark_df["Close"].iloc[-(lookback + 1)] - 1.0
+    return float((r_stock - r_bench) * 100.0)
+
+
+def days_since_low(df: pd.DataFrame, window: int = 60) -> int | None:
+    """Trading days since the lowest close of the last `window` sessions.
+
+    0 means today IS the low (no bounce yet); small values mean a fresh
+    bounce — the best mean-reversion entries come shortly after the turn,
+    not weeks into the recovery.
+    """
+    if len(df) < 2:
+        return None
+
+    closes = df["Close"].iloc[-window:].values
+    return int(len(closes) - 1 - int(np.argmin(closes)))
+
+
 def compute_vol_adjusted_drop(df: pd.DataFrame) -> pd.Series:
     """Vol-adjusted drop: |drawdown| / annualized_vol.
 

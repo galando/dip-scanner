@@ -249,3 +249,83 @@ class TestATRDistanceBelowMA:
         df.iloc[-1, df.columns.get_loc("High")] = 91.0
         dist = atr_distance_below_ma(df)
         assert dist.iloc[-1] > 0
+
+
+# ---------------------------------------------------------------------------
+# New timing indicators: volume confirmation, relative strength, days since low
+# ---------------------------------------------------------------------------
+from src.indicators import (  # noqa: E402
+    detect_volume_confirmation,
+    compute_relative_strength,
+    days_since_low,
+)
+
+
+class TestVolumeConfirmation:
+    """Up close on elevated volume = real demand, not a quiet drift."""
+
+    def test_up_close_on_heavy_volume_detected(self):
+        closes = [100.0] * 25 + [99.0, 100.0, 101.0]
+        volumes = [1_000_000] * 25 + [1_000_000, 2_000_000, 2_000_000]
+        df = _make_ohlcv_df(closes, volumes=volumes)
+        assert detect_volume_confirmation(df, n=2, avg_window=20, mult=1.2) is True
+
+    def test_up_close_on_quiet_volume_rejected(self):
+        closes = [100.0] * 25 + [99.0, 100.0, 101.0]
+        df = _make_ohlcv_df(closes)  # flat volume everywhere
+        assert detect_volume_confirmation(df, n=2, avg_window=20, mult=1.2) is False
+
+    def test_down_close_on_heavy_volume_rejected(self):
+        # Heavy volume while still falling is distribution, not accumulation
+        closes = [100.0] * 25 + [99.0, 98.0, 97.0]
+        volumes = [1_000_000] * 25 + [1_000_000, 3_000_000, 3_000_000]
+        df = _make_ohlcv_df(closes, volumes=volumes)
+        assert detect_volume_confirmation(df, n=2, avg_window=20, mult=1.2) is False
+
+    def test_too_short_history_rejected(self):
+        df = _make_ohlcv_df([100.0, 101.0, 102.0])
+        assert detect_volume_confirmation(df) is False
+
+
+class TestRelativeStrength:
+    """Stock return minus SPY return over the lookback, in percentage points."""
+
+    def test_outperformer_positive(self):
+        stock = _make_price_df([100.0] * 10 + [100.0 + i for i in range(21)])   # +20%
+        spy = _make_price_df([400.0] * 31)                                       # flat
+        rs = compute_relative_strength(stock, spy, lookback=20)
+        assert rs is not None and rs > 15.0
+
+    def test_underperformer_negative(self):
+        stock = _make_price_df([100.0] * 10 + [100.0 - i for i in range(21)])   # -20%
+        spy = _make_price_df([400.0] * 31)
+        rs = compute_relative_strength(stock, spy, lookback=20)
+        assert rs is not None and rs < -15.0
+
+    def test_missing_benchmark_returns_none(self):
+        stock = _make_price_df([100.0] * 31)
+        assert compute_relative_strength(stock, None, lookback=20) is None
+
+    def test_short_history_returns_none(self):
+        stock = _make_price_df([100.0] * 5)
+        spy = _make_price_df([400.0] * 31)
+        assert compute_relative_strength(stock, spy, lookback=20) is None
+
+
+class TestDaysSinceLow:
+    """0 = today is the low; small values = fresh bounce."""
+
+    def test_today_is_low(self):
+        df = _make_price_df([100.0 - i for i in range(30)])  # falling into today
+        assert days_since_low(df) == 0
+
+    def test_bounced_three_days_ago(self):
+        closes = [100.0 - i for i in range(27)] + [75.0, 76.0, 77.0]
+        df = _make_price_df(closes)
+        assert days_since_low(df) == 3
+
+    def test_window_limits_lookback(self):
+        # Deep low long ago, shallower low recently: only the window counts
+        closes = [50.0] + [100.0] * 58 + [90.0, 95.0]
+        df = _make_price_df(closes)
+        assert days_since_low(df, window=10) == 1

@@ -28,6 +28,7 @@ import src.regime as regime_mod
 import src.gates as gates
 import src.telegram as telegram
 from src.indicators import compute_rsi, compute_drawdown_from_52w_high
+from src.score import score_candidate
 
 logging.basicConfig(
     level=logging.INFO,
@@ -84,11 +85,14 @@ def _month_end(d: date) -> date:
 # Strategy: buy selection (strict gates) and exit rules
 # --------------------------------------------------------------------------- #
 def scan_candidates(regime: str, prices_map: dict, cfg, exclude: set) -> list[dict]:
-    """Return stocks passing ALL gates, deepest drawdown first.
+    """Return stocks passing ALL gates, best opportunity score first.
 
     Mirrors scanner.run_scan's pipeline (gate 2 -> fundamentals -> gate 1 -> gate 3)
     but skips the dedup store and returns structured buy candidates instead of alerting.
+    Free slots are limited, so the composite score (dip depth + timing + quality
+    + relative strength - trap penalty) decides who fills them.
     """
+    spy_df = prices_map.get("SPY")
     candidates: list[dict] = []
     for ticker, prices_df in prices_map.items():
         if ticker in exclude or ticker == "SPY":
@@ -108,17 +112,21 @@ def scan_candidates(regime: str, prices_map: dict, cfg, exclude: set) -> list[di
                 continue
 
             details = {**details_2, **details_1, **details_3, "regime": regime}
+            score, breakdown = score_candidate(details, prices_df, spy_df, cfg)
+            details["score"] = score
+            details["score_breakdown"] = breakdown
             candidates.append({
                 "ticker": ticker,
                 "name": fund.get("shortName", ticker),
                 "price": float(prices_df["Close"].iloc[-1]),
+                "score": score,
                 "details": details,
             })
         except Exception as e:  # never let one bad ticker abort the scan
             logger.warning("Candidate scan error for %s: %s", ticker, e)
             continue
 
-    candidates.sort(key=lambda c: c["details"].get("drawdown_pct", 0))
+    candidates.sort(key=lambda c: c["score"], reverse=True)
     return candidates
 
 
@@ -253,7 +261,8 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
 
     state = load_sim(state_path)
     held = [p["ticker"] for p in state["positions"]] if state else []
-    all_tickers = list(dict.fromkeys(tickers + held))
+    # SPY is included for relative-strength scoring; scan_candidates never buys it.
+    all_tickers = list(dict.fromkeys(tickers + held + ["SPY"]))
     prices_map = data.fetch_prices(all_tickers)
 
     # First ever run: initialize and stop.
