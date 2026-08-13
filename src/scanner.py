@@ -17,6 +17,7 @@ import src.state as state
 import src.telegram as telegram
 from src.indicators import compute_rsi
 from src.score import score_candidate, rank_candidates
+from src.universe import MIN_EXPECTED_TICKERS
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,6 +41,16 @@ def run_scan() -> list[str]:
     # Get universe
     tickers = universe.get_sp500_tickers()
     logger.info("Scanning %d tickers", len(tickers))
+
+    # A shrunken universe means most of the index is not being scanned —
+    # surface it in the summary instead of failing silently.
+    universe_note = ""
+    if len(tickers) < MIN_EXPECTED_TICKERS:
+        universe_note = (
+            f"⚠️ נסרקה רשימה חלקית ({len(tickers)} מניות) — טעינת רשימת S&P 500 נכשלה\n"
+            f"(Partial universe: {len(tickers)} tickers — S&P 500 list fetch failed)"
+        )
+        logger.warning("Universe degraded: only %d tickers", len(tickers))
 
     # Fetch batch prices
     prices_map = data.fetch_prices(tickers)
@@ -160,7 +171,8 @@ def run_scan() -> list[str]:
     if not alerted:
         if token and chat_ids:
             summary = telegram.compose_daily_summary(
-                regime, len(prices_map), len(alerted), deduped
+                regime, len(prices_map), len(alerted), deduped,
+                universe_note=universe_note,
             )
             for cid in chat_ids:
                 telegram.send_alert(token, cid, summary)

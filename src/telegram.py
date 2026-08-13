@@ -150,7 +150,7 @@ def compose_alert(ticker: str, name: str, price: float, details: dict) -> str:
 # ---------------------------------------------------------------------------
 
 def compose_daily_summary(regime: str, scanned: int, alerted: int,
-                          deduped: list[str]) -> str:
+                          deduped: list[str], universe_note: str = "") -> str:
     """Summary sent at the end of every scan day when no new alerts fire."""
     today = date.today().strftime("%Y-%m-%d")
     regime_he, regime_en = _REGIME_LABELS.get(regime, (regime, regime))
@@ -162,13 +162,15 @@ def compose_daily_summary(regime: str, scanned: int, alerted: int,
             f"{', '.join(deduped)}"
         )
 
+    note_line = f"\n{universe_note}" if universe_note else ""
+
     return (
         f"📋 סיכום יומי / Daily Scan — {today}\n"
         f"\n"
         f"📈 מצב שוק / Market: {regime_he} / {regime_en}\n"
         f"🔍 נסרקו / Scanned: {scanned} מניות / stocks\n"
         f"🔔 התראות חדשות / New alerts: {alerted}"
-        f"{dedup_line}\n"
+        f"{dedup_line}{note_line}\n"
         f"\nלא נמצאו ירידות איכותיות חדשות היום.\n"
         f"(No new quality dips found today.)\n"
         f"\nℹ️ לא ייעוץ השקעות. (Not investment advice.)"
