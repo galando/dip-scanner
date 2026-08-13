@@ -105,11 +105,23 @@ def compose_alert(ticker: str, name: str, price: float, details: dict) -> str:
     trap_lines = [f"  ⚠️ {w}" for w in warnings] or ["  לא נמצאו דגלים אדומים / No red flags ✅"]
     trap_section = "\n".join(trap_lines)
 
+    # Opportunity score — how this candidate ranks among today's passers
+    score = details.get("score")
+    rank = details.get("rank")
+    ranked_of = details.get("ranked_of")
+    score_line = ""
+    if isinstance(score, (int, float)):
+        rank_part = ""
+        if rank and ranked_of:
+            rank_part = f"  (מקום {rank} מתוך {ranked_of} היום / rank {rank} of {ranked_of} today)"
+        score_line = f"🎯 ציון הזדמנות / Opportunity score: {score:.0f}/100{rank_part}\n"
+
     drawdown_abs = abs(drawdown)
     msg = (
         f"🔔 התראת ירידה / Dip Alert  [שוק: {regime_he} / Market: {regime_en}]\n"
         f"\n"
         f"{ticker} — {name}\n"
+        f"{score_line}"
         f"מחיר נוכחי / Price: ${price:.2f}\n"
         f"📉 ירדה {drawdown_abs:.0f}% מהשיא שלה השנה (down {drawdown_abs:.0f}% from its yearly high)\n"
         f"💧 הירידה גדולה יותר מהרגיל לה פי {vol_adj} (drop is {vol_adj}x larger than its typical moves)\n"

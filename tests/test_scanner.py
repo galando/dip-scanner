@@ -88,6 +88,8 @@ class TestRunScan:
         mock_state.load_state.return_value = {}
         mock_state.is_recently_alerted.return_value = False
         mock_telegram.send_alert.return_value = True
+        # MagicMock iterates as empty; the send loop needs a real chat id list
+        mock_telegram.get_chat_ids.return_value = ["12345"]
 
         run_scan()
 
@@ -95,6 +97,36 @@ class TestRunScan:
         # Verify compose_alert was called with NFLX
         compose_call = mock_telegram.compose_alert.call_args
         assert compose_call[0][0] == "NFLX"
+
+    @patch("src.scanner.os.environ.get", return_value="fake_value")
+    @patch("src.scanner.state")
+    @patch("src.scanner.telegram")
+    @patch("src.scanner.data")
+    @patch("src.regime.data")
+    @patch("src.scanner.universe")
+    def test_daily_cap_limits_alerts_to_best(self, mock_universe, mock_regime_data, mock_data, mock_telegram, mock_state, mock_env):
+        """With more passers than MAX_ALERTS_PER_DAY, only the top-N are sent."""
+        import config as cfg
+        n_tickers = cfg.MAX_ALERTS_PER_DAY + 3
+        tickers = [f"TK{i}" for i in range(n_tickers)]
+        mock_universe.get_sp500_tickers.return_value = tickers
+        mock_regime_data.fetch_prices.return_value = {"SPY": _make_spy_risk_on()}
+        mock_data.fetch_prices.return_value = {t: _make_passing_prices() for t in tickers}
+        mock_data.fetch_fundamentals.return_value = _make_fundamentals_passing()
+
+        mock_state.load_state.return_value = {}
+        mock_state.is_recently_alerted.return_value = False
+        mock_telegram.send_alert.return_value = True
+        mock_telegram.get_chat_ids.return_value = ["12345"]
+
+        run_scan()
+
+        assert mock_telegram.compose_alert.call_count == cfg.MAX_ALERTS_PER_DAY
+        assert mock_telegram.send_alert.call_count == cfg.MAX_ALERTS_PER_DAY
+        # Every sent alert carries its score and rank
+        for c in mock_telegram.compose_alert.call_args_list:
+            details = c[0][3]
+            assert "score" in details and details["rank"] is not None
 
     @patch("src.scanner.state")
     @patch("src.scanner.telegram")

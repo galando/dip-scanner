@@ -1,8 +1,8 @@
 """Scanner orchestrator — wires all modules and runs the daily scan.
 
 Flow: regime -> universe -> batch prices -> price-based gates (2a, 2b) ->
-      fetch fundamentals for survivors -> quality gate -> trap gate ->
-      dedup -> telegram
+      dedup -> fetch fundamentals for survivors -> quality gate -> trap gate ->
+      score & rank (best first, sector-capped, top-N) -> telegram
 """
 import logging
 import os
@@ -16,6 +16,7 @@ import src.gates as gates
 import src.state as state
 import src.telegram as telegram
 from src.indicators import compute_rsi
+from src.score import score_candidate, rank_candidates
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,12 +49,17 @@ def run_scan() -> list[str]:
         logger.warning("No price data fetched, aborting scan")
         return []
 
+    # SPY history for relative-strength scoring (best-effort; scoring
+    # degrades gracefully without it)
+    spy_df = data.fetch_prices(["SPY"]).get("SPY")
+
     # Load dedup state
     dedup_state = state.load_state()
 
-    alerted: list[str] = []
+    candidates: list[dict] = []
     deduped: list[str] = []
 
+    # --- Phase 1: collect every stock that passes all gates ---
     for ticker, prices_df in prices_map.items():
         try:
             # Price-based gates first (cheap)
@@ -62,6 +68,12 @@ def run_scan() -> list[str]:
             )
             if not passed_2:
                 logger.debug("SKIP %s: %s", ticker, details_2.get("reason", "gate 2"))
+                continue
+
+            # Dedup check before the expensive fundamentals fetch
+            if state.is_recently_alerted(ticker, dedup_state, config.DEDUP_DAYS):
+                logger.info("SKIP %s: recently alerted (dedup)", ticker)
+                deduped.append(ticker)
                 continue
 
             # Fetch fundamentals only for survivors (expensive)
@@ -82,15 +94,6 @@ def run_scan() -> list[str]:
                 logger.debug("SKIP %s: trap detected — %s", ticker, details_3.get("reason", ""))
                 continue
 
-            # Dedup check
-            if state.is_recently_alerted(ticker, dedup_state, config.DEDUP_DAYS):
-                logger.info("SKIP %s: recently alerted (dedup)", ticker)
-                deduped.append(ticker)
-                continue
-
-            # Compose and send alert
-            name = fund.get("shortName", ticker)
-            price = prices_df["Close"].iloc[-1]
             all_details = {**details_2, **details_1, **details_3, "regime": regime}
 
             # Add RSI trend description
@@ -100,33 +103,61 @@ def run_scan() -> list[str]:
                 rsi_then = rsi_series.iloc[-(config.LOOKBACK + 1)]
                 all_details["rsi_trend"] = f"turning up (was {rsi_then:.0f} {config.LOOKBACK} days ago)" if rsi_now > rsi_then else "declining"
 
-            msg = telegram.compose_alert(ticker, name, price, all_details)
+            score, breakdown = score_candidate(all_details, prices_df, spy_df, config)
+            all_details["score"] = score
+            all_details["score_breakdown"] = breakdown
 
-            token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-            chat_ids = telegram.get_chat_ids()
-            if token and chat_ids:
-                for cid in chat_ids:
-                    telegram.send_alert(token, cid, msg)
-            else:
-                logger.warning("Telegram credentials not set or no users registered, printing alert instead")
-                print(msg)
-
-            # Mark alerted
-            dedup_state = state.mark_alerted(ticker, dedup_state)
-            alerted.append(ticker)
-            logger.info("ALERT: %s (%s)", ticker, name)
+            candidates.append({
+                "ticker": ticker,
+                "name": fund.get("shortName", ticker),
+                "price": float(prices_df["Close"].iloc[-1]),
+                "sector": fund.get("sector"),
+                "score": score,
+                "details": all_details,
+            })
+            logger.info("CANDIDATE: %s score=%.1f sector=%s", ticker, score, fund.get("sector"))
 
         except Exception as e:
             logger.error("Error processing %s: %s", ticker, e, exc_info=True)
             continue
+
+    # --- Phase 2: rank best-first, cap per sector and per day, send ---
+    selected, dropped = rank_candidates(candidates, config)
+    for cand in dropped:
+        # Not marked in the dedup store, so a strong-but-crowded-out candidate
+        # can still alert tomorrow if it keeps qualifying.
+        logger.info(
+            "RANKED OUT: %s score=%.1f (top %d cap / sector cap)",
+            cand["ticker"], cand["score"], config.MAX_ALERTS_PER_DAY,
+        )
+
+    alerted: list[str] = []
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    chat_ids = telegram.get_chat_ids()
+
+    for cand in selected:
+        details = cand["details"]
+        details["rank"] = cand.get("rank")
+        details["ranked_of"] = cand.get("ranked_of")
+        msg = telegram.compose_alert(cand["ticker"], cand["name"], cand["price"], details)
+
+        if token and chat_ids:
+            for cid in chat_ids:
+                telegram.send_alert(token, cid, msg)
+        else:
+            logger.warning("Telegram credentials not set or no users registered, printing alert instead")
+            print(msg)
+
+        dedup_state = state.mark_alerted(cand["ticker"], dedup_state)
+        alerted.append(cand["ticker"])
+        logger.info("ALERT: %s (%s) score=%.1f rank=%s", cand["ticker"], cand["name"],
+                    cand["score"], cand.get("rank"))
 
     # Save dedup state
     state.save_state(dedup_state)
 
     # Send daily summary when no new alerts fired so the user always hears something
     if not alerted:
-        token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-        chat_ids = telegram.get_chat_ids()
         if token and chat_ids:
             summary = telegram.compose_daily_summary(
                 regime, len(prices_map), len(alerted), deduped

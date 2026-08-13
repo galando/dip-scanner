@@ -68,6 +68,54 @@ Every stock must pass all four gates:
 
 ---
 
+## Opportunity Score & Ranking
+
+The gates decide **who qualifies**; the score decides **who is best**. On a
+broad sell-off day dozens of stocks can pass all four gates — alerting all of
+them buries the good ones. Every passer is scored 0–100 and only the top
+`MAX_ALERTS_PER_DAY` (5) are sent, best first, with at most `MAX_PER_SECTOR`
+(2) per sector so one crashing industry doesn't fill the whole list.
+
+| Component | Weight | What it measures |
+|-----------|--------|------------------|
+| Dip depth | 0–25 | How stretched the drop is vs the stock's *own* volatility |
+| Timing | 0–30 | Stabilization signals + **fresh bounce** (low was 1–7 days ago) + **volume confirmation** (up close on ≥1.2× average volume — real demand, not quiet drift) |
+| Quality | 0–25 | ROE, operating margin, low debt |
+| Relative strength | 0–10 | Held up better than SPY over the last 20 sessions — dips that found buyers first recover first |
+| Trap penalty | 0 to −30 | Each red flag subtracts (price-based traps hit harder) |
+
+Every alert shows its score and today's rank (e.g. `82/100, rank 1 of 4`).
+Candidates crowded out by the caps are *not* marked as alerted, so they can
+still alert tomorrow if they keep qualifying. The monthly simulation fills its
+free slots by the same score, so paper trading exercises the same ranking.
+
+---
+
+## Backtest — Prove the Timing Before Trusting It
+
+`src/backtest.py` replays the price-based gates over years of history with no
+lookahead, then measures what actually happened after each signal:
+
+- Forward returns at 21 / 63 / 126 / 252 trading days
+- Win rate and beat-SPY rate per horizon
+- Max adverse excursion (how much *more* pain came after entry)
+- **Stabilization ON vs OFF** — the falling-knife baseline, so the core design
+  claim ("buy the first stabilization, not the fall") is measured, not assumed
+
+```bash
+PYTHONPATH=. python -m src.backtest --period 5y --max-tickers 100
+```
+
+Or in GitHub: `Actions > Backtest > Run workflow` (choose period, universe
+size, and whether to send the report to Telegram).
+
+Honest limitation: Gate 1 (quality) can't be replayed — yfinance has no
+point-in-time fundamentals — so backtest results are a lower bound on
+selectivity. If the numbers don't beat "buy SPY on the same dates," the system
+has no edge; believe the numbers, not the design.
+
+---
+
 ## Monthly Paper-Trading Simulation
 
 A one-time, fake-money test of the strategy that reports entirely through the
@@ -119,6 +167,11 @@ All thresholds live in `config.py`. Key knobs:
 | `MAX_DEBT_EQUITY` | 150 | Maximum debt/equity ratio |
 | `MIN_MKT_CAP` | $10B | Minimum market cap |
 | `DEDUP_DAYS` | 10 | Don't re-alert same ticker within N days |
+| `MAX_ALERTS_PER_DAY` | 5 | Send only the N best-scored candidates per day |
+| `MAX_PER_SECTOR` | 2 | Cap alerts per sector (avoid 5 correlated chip stocks) |
+| `RS_LOOKBACK` | 20 | Sessions for relative strength vs SPY |
+| `VOLUME_CONFIRM_MULT` | 1.2 | Recent volume vs average for volume confirmation |
+| `FRESH_BOUNCE_MAX_DAYS` | 7 | Bounce off the low within N sessions scores as fresh |
 | `TRAP_BEHAVIOR` | "warn" | "warn" = alert with warning, "suppress" = skip |
 | `SUPPRESS_IN_RISK_OFF` | False | Skip all alerts when SPY below 200dma |
 | `STABILIZATION_REQUIRED_RISK_OFF` | 2 | Stabilization signals required in RISK_OFF |
@@ -137,10 +190,14 @@ GitHub Actions (daily cron, after US close)
         +--> universe.py   : S&P 500 ticker list
         +--> data.py       : price history + fundamentals via yfinance
         +--> regime.py     : SPY vs 200dma (RISK_ON / RISK_OFF)
-        +--> indicators.py : RSI, ATR, MAs, drawdown, stabilization detection
+        +--> indicators.py : RSI, ATR, MAs, drawdown, stabilization, volume
+        |                    confirmation, relative strength, days-since-low
         +--> gates.py      : four-gate pipeline
+        +--> score.py      : opportunity score + best-first ranking, sector caps
         +--> state.py      : dedup store (state.json)
         +--> telegram.py   : send alerts
+
+   backtest.py (on demand): replay the gates historically, measure the edge
 ```
 
 No always-on server. Zero cost. Everything runs inside the Action and exits.
