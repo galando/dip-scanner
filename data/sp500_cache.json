@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-17",
+  "updated": "2026-08-18",
   "tickers": [
     "MMM",
     "AOS",
@@ -54,7 +54,6 @@
     "ADSK",
     "ADP",
     "AZO",
-    "AVB",
     "AVY",
     "AXON",
     "BKR",
@@ -176,7 +175,6 @@
     "EQT",
     "EFX",
     "EQIX",
-    "EQR",
     "ERIE",
     "ESS",
     "EL",
@@ -389,6 +387,7 @@
     "Q",
     "RL",
     "RJF",
+    "RDDT",
     "RTX",
     "O",
     "REG",
@@ -478,6 +477,7 @@
     "VICI",
     "V",
     "VST",
+    "VMRK",
     "VMC",
     "WRB",
     "GWW",
