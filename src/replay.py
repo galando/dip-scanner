@@ -54,7 +54,8 @@ MAX_SIGNAL_AGE_DAYS = 4
 
 
 def _actionable(alerts: dict[str, list[str]], sessions: list[date],
-                max_age_days: int = MAX_SIGNAL_AGE_DAYS) -> dict[str, list[str]]:
+                max_age_days: int = MAX_SIGNAL_AGE_DAYS,
+                window_start: date | None = None) -> dict[str, list[str]]:
     """Move each alert onto the first session at or after the day it fired.
 
     Almost every alert already lands on a trading day, but a handful do not —
@@ -65,11 +66,16 @@ def _actionable(alerts: dict[str, list[str]], sessions: list[date],
     window, not this one, even if it is only a day or two old: letting it in
     would make two adjacent windows share entries, which quietly destroys the
     independence that `src/validate.py` relies on. So a signal must have fired
-    on or after the first session, and must not be staler than `max_age_days`
+    on or after the window opened, and must not be staler than `max_age_days`
     by the time a session comes round to act on it.
+
+    The boundary is `window_start` — the day the window opens — not the first
+    session in it. A window that opens on a weekend has its first session on the
+    Monday, and using that instead would throw away exactly the alerts the
+    roll-forward above exists to keep.
     """
     out: dict[str, list[str]] = {}
-    first = sessions[0]
+    first = window_start or sessions[0]
     for day, tickers in sorted(alerts.items()):
         fired = date.fromisoformat(day)
         if fired < first:
@@ -104,7 +110,7 @@ def replay(start: date, end: date = None, cfg=config, cache_dir: str = pricecach
     sessions = pricecache.trading_days(start, end, cache_dir)
     if not sessions:
         raise ValueError(f"No cached sessions in {start}..{end}")
-    alerts = _actionable(load_alerts(alerts_path), sessions)
+    alerts = _actionable(load_alerts(alerts_path), sessions, window_start=start)
 
     state = {
         "status": "RUNNING",

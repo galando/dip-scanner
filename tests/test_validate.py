@@ -109,3 +109,25 @@ def test_bootstrap_counts_add_up(cache, alerts):
     assert (b["windows_improved"] + b["windows_unchanged"] + b["windows_worsened"]
             == b["n_windows"] == len(b["per_window_delta"]))
     assert b["ci_low"] <= b["observed_mean_delta"] <= b["ci_high"]
+
+
+class TestVerdictFollowsTheNumbers:
+    """The verdict used to be fixed text that survived the numbers changing."""
+
+    def test_consistent_only_when_nothing_got_worse(self):
+        from src.validate import direction_phrase
+        assert direction_phrase(4, 0, 8).startswith("Direction is consistent")
+        assert not direction_phrase(4, 3, 8).startswith("Direction is consistent")
+
+    def test_leans_positive_when_more_helped_than_hurt(self):
+        from src.validate import direction_phrase
+        assert direction_phrase(4, 3, 8).startswith("Direction leans positive")
+        assert "helps in 4 of 8" in direction_phrase(4, 3, 8)
+
+    def test_a_tie_is_called_a_tie(self):
+        from src.validate import direction_phrase
+        assert direction_phrase(3, 3, 8).startswith("Direction is a coin flip")
+
+    def test_a_losing_change_is_called_negative(self):
+        from src.validate import direction_phrase
+        assert direction_phrase(2, 5, 8).startswith("Direction is negative")

@@ -328,6 +328,85 @@ def _print_sweep(top: int = 15) -> None:
         print("          " + line(entry))
 
 
+# One knob moved at a time, against the pre-tuning baseline. Kept as data and
+# printed by a command rather than transcribed into the report by hand: the
+# hand-written version of this table went stale the first time a fix moved the
+# numbers, and nothing failed to say so.
+KNOB_ROWS = [
+    ("min-hold=3", {"SIM_MIN_HOLD_SESSIONS": 3}),
+    ("min-hold=5", {"SIM_MIN_HOLD_SESSIONS": 5}),
+    ("min-hold=10", {"SIM_MIN_HOLD_SESSIONS": 10}),
+    ("min-hold=15", {"SIM_MIN_HOLD_SESSIONS": 15}),
+    ("min-hold=20", {"SIM_MIN_HOLD_SESSIONS": 20}),
+    (None, None),
+    ("RSI exit=65", {"SIM_RSI_EXIT": 65}),
+    ("RSI exit=70", {"SIM_RSI_EXIT": 70}),
+    ("RSI exit=75", {"SIM_RSI_EXIT": 75}),
+    ("RSI exit=off", {"SIM_RSI_EXIT": OFF}),
+    (None, None),
+    ("thesis break=3", {"SIM_THESIS_BREAK_MIN_LOSS_PCT": 3}),
+    ("thesis break=8", {"SIM_THESIS_BREAK_MIN_LOSS_PCT": 8}),
+    ("take profit=15", {"SIM_TAKE_PROFIT_PCT": 15}),
+    ("take profit=20", {"SIM_TAKE_PROFIT_PCT": 20}),
+    ("stop loss=10", {"SIM_STOP_LOSS_PCT": 10}),
+]
+
+
+def knob_table(windows, adopted: dict | None = None,
+               cache_dir: str = pricecache.CACHE_DIR,
+               alerts_path: str = replay.ALERTS_PATH) -> list[dict | None]:
+    """One row per single-knob change, plus the baseline, measured on `windows`.
+
+    `None` entries are blank separator lines, kept so the printed table groups
+    the knobs the way the report reads them.
+    """
+    rows: list[dict | None] = []
+    for label, override in [("baseline (pre-tuning)", {"SIM_MIN_HOLD_SESSIONS": 0})] + KNOB_ROWS:
+        if label is None:
+            rows.append(None)
+            continue
+        settings = {"SIM_MIN_HOLD_SESSIONS": 0, **override}
+        r = evaluate(settings, windows, cache_dir, alerts_path)
+        returns = sorted(w["return_pct"] for w in r["windows"])
+        mid = len(returns) // 2
+        median = (returns[mid] if len(returns) % 2
+                  else (returns[mid - 1] + returns[mid]) / 2)
+        benchmarked = [w for w in r["windows"] if w["benchmark_pct"] is not None]
+        rows.append({
+            "label": label,
+            "settings": settings,
+            "mean_pct": r["mean_pct"],
+            "worst_pct": r["worst_pct"],
+            "median_pct": median,
+            "beats": sum(1 for w in benchmarked if w["return_pct"] > w["benchmark_pct"]),
+            "benchmarked": len(benchmarked),
+            "trades": r["trades"],
+            "adopted": adopted is not None and settings == {"SIM_MIN_HOLD_SESSIONS": 0, **adopted},
+        })
+    return rows
+
+
+def _print_knobs() -> None:
+    import src.validate as validate            # imported here: validate imports tune
+
+    first = min(replay.load_alerts())
+    lo, hi = validate._span()
+    windows = validate.rolling(max(lo, date.fromisoformat(first)), hi)
+
+    print(f"Each exit knob on its own, across {len(windows)} rolling 30-day windows.")
+    print("Return on the $10,000 book; 'beats SPY' counts windows, not dollars.")
+    print("Every row is measured against the PRE-TUNING baseline (min-hold=0).\n")
+    print(f"{'setting':32}{'mean':>8}{'worst':>8}{'median':>9}{'beats SPY':>12}{'trades':>8}")
+    for row in knob_table(windows, adopted={"SIM_MIN_HOLD_SESSIONS": config.SIM_MIN_HOLD_SESSIONS}):
+        if row is None:
+            print()
+            continue
+        mark = "   <-- adopted" if row["adopted"] else ""
+        print(f"{row['label'] + mark:32}{row['mean_pct']:+8.2f}{row['worst_pct']:+8.2f}"
+              f"{row['median_pct']:+9.2f}{row['beats']:>8}/{row['benchmarked']:<3}"
+              f"{row['trades']:>8}")
+
+
 if __name__ == "__main__":
     import sys
     command = sys.argv[1] if len(sys.argv) > 1 else "curve"
@@ -335,7 +414,9 @@ if __name__ == "__main__":
         _print_curve()
     elif command == "cost":
         _print_exit_cost()
+    elif command == "knobs":
+        _print_knobs()
     elif command == "sweep":
         _print_sweep()
     else:
-        raise SystemExit("usage: python -m src.tune [curve|cost|sweep]")
+        raise SystemExit("usage: python -m src.tune [curve|cost|knobs|sweep]")

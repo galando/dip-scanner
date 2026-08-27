@@ -28,7 +28,7 @@ The second number is the honest sample size.
 ====================================================================
 Verdict
 ====================================================================
-  Direction is consistent: the change helps in 4 of 8 overlapping windows, hurts in 3.
+  Direction leans positive: the change helps in 4 of 8 overlapping windows, hurts in 3.
   Size is not established: on the 2 windows that share no
   sessions the 95% interval is [+0.00, +2.74] pp — it includes zero.
   The adopted setting was not chosen on the test windows and still beats

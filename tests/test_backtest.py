@@ -204,3 +204,22 @@ class TestOfflineGuard:
         report = capsys.readouterr().out
         # The report names the universe it actually scanned, not everything cached.
         assert "2 tickers" in report
+
+    def test_shallow_spy_is_kept_as_benchmark_and_regime_input(self, monkeypatch, caplog):
+        """Dropping SPY turns every date RISK_ON and loses the benchmark silently."""
+        import logging
+        import src.backtest as backtest
+        self._cache(monkeypatch, {"DEEP1": 400, "DEEP2": 400, "SPY": 120})
+        monkeypatch.setattr("sys.argv", ["backtest", "--offline"])
+        with caplog.at_level(logging.WARNING):
+            backtest.main()
+        assert "cached SPY holds 120 sessions" in caplog.text
+
+    def test_missing_spy_is_reported(self, monkeypatch, caplog):
+        import logging
+        import src.backtest as backtest
+        self._cache(monkeypatch, {"DEEP1": 400, "DEEP2": 400})
+        monkeypatch.setattr("sys.argv", ["backtest", "--offline"])
+        with caplog.at_level(logging.WARNING):
+            backtest.main()
+        assert "no cached SPY" in caplog.text

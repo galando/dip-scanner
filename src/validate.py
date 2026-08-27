@@ -135,6 +135,22 @@ ADOPTED = {"SIM_MIN_HOLD_SESSIONS": config.SIM_MIN_HOLD_SESSIONS}
 BEFORE = {"SIM_MIN_HOLD_SESSIONS": 0}
 
 
+def direction_phrase(up: int, down: int, n: int) -> str:
+    """How to describe a win/loss split, without overstating it.
+
+    Split out so the wording is tested against the counts directly: the verdict
+    used to be fixed text, and a bug fix that moved the numbers left the
+    sentence beside them saying the same thing as before.
+    """
+    if up and not down:
+        return f"Direction is consistent: the change helps in {up} of {n} overlapping windows and hurts in none."
+    if up > down:
+        return f"Direction leans positive: the change helps in {up} of {n} overlapping windows, hurts in {down}."
+    if up == down:
+        return f"Direction is a coin flip: the change helps in {up} of {n} overlapping windows and hurts in {down}."
+    return f"Direction is negative: the change hurts in {down} of {n} overlapping windows and helps in {up}."
+
+
 def _span(cache_dir: str = pricecache.CACHE_DIR) -> tuple[date, date]:
     dates = pricecache.load_dates(cache_dir)
     return date.fromisoformat(dates[0]), date.fromisoformat(dates[-1])
@@ -199,16 +215,35 @@ def _report() -> None:
     print("=" * 68)
     b_over = bootstrap(ADOPTED, BEFORE, over)
     b_apart = bootstrap(ADOPTED, BEFORE, apart)
-    print(f"  Direction is consistent: the change helps in "
-          f"{b_over['windows_improved']} of {b_over['n_windows']} overlapping windows, "
-          f"hurts in {b_over['windows_worsened']}.")
-    print(f"  Size is not established: on the {b_apart['n_windows']} windows that share no")
-    print(f"  sessions the 95% interval is [{b_apart['ci_low']:+.2f}, {b_apart['ci_high']:+.2f}] pp — it includes zero.")
-    print(f"  The adopted setting was not chosen on the test windows and still beats")
-    print(f"  both the baseline and the walk-forward winner there "
-          f"({adopted['mean_pct']:+.2f}% vs {wf['baseline_test']['mean_pct']:+.2f}% "
-          f"and {wf['chosen_test']['mean_pct']:+.2f}%), which is weak evidence for it")
-    print(f"  and against the busier settings.")
+
+    # Every sentence below is derived from the numbers printed above it. An
+    # earlier version stated its conclusions as fixed text, which stayed on the
+    # page unchanged after a bug fix moved the very numbers beside it.
+    print(f"  {direction_phrase(b_over['windows_improved'], b_over['windows_worsened'], b_over['n_windows'])}")
+
+    spans_zero = b_apart["ci_low"] <= 0 <= b_apart["ci_high"]
+    size = "not established" if spans_zero else "measurable on this sample"
+    print(f"  Size is {size}: on the {b_apart['n_windows']} windows that share no")
+    print(f"  sessions the 95% interval is [{b_apart['ci_low']:+.2f}, {b_apart['ci_high']:+.2f}] pp — it "
+          f"{'includes' if spans_zero else 'excludes'} zero.")
+
+    beats_base = adopted["mean_pct"] > wf["baseline_test"]["mean_pct"]
+    beats_wf = adopted["mean_pct"] > wf["chosen_test"]["mean_pct"]
+    if beats_base and beats_wf:
+        wf_line = ("The adopted setting was not chosen on the test windows and still beats\n"
+                   "  both the baseline and the walk-forward winner there")
+        wf_tail = "which is weak evidence for it\n  and against the busier settings."
+    elif beats_base:
+        wf_line = ("The adopted setting beats the baseline on the test windows but not the\n"
+                   "  walk-forward winner")
+        wf_tail = "so the choice is defensible but not the best the grid offers."
+    else:
+        wf_line = ("The adopted setting does NOT beat the baseline on the test windows it was\n"
+                   "  not chosen on")
+        wf_tail = "which is evidence against it."
+    print(f"  {wf_line} ({adopted['mean_pct']:+.2f}% vs "
+          f"{wf['baseline_test']['mean_pct']:+.2f}% and {wf['chosen_test']['mean_pct']:+.2f}%), {wf_tail}")
+
     print(f"\n  Deepen the cache and re-run to turn this from a direction into a size:")
     print(f"      PYTHONPATH=. python -m src.cachebuild --period 5y")
 

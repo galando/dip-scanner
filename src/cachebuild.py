@@ -70,18 +70,40 @@ def write_ticker(ticker: str, df: pd.DataFrame, dates: list[str],
     represent a hole. Rather than filling one in, which would put invented
     prices and volumes on disk indistinguishable from real ones, a ticker with
     gaps is reported and not written.
+
+    A batch download pads every ticker out to the union of all their sessions,
+    so a ticker that did not trade that day arrives as a row of NaN rather than
+    as an absent row. Those are dropped first: an all-NaN row is a hole wearing
+    a date, and writing it would put `NaN` in the JSON, hand replay a price that
+    silently books as a losing trade, and let an IPO present full calendar depth
+    to BACKTEST_MIN_HISTORY.
+    """
+    arrays, missing = _encode_ticker(df, dates)
+    if missing or arrays is None:
+        return 0, missing
+    with open(os.path.join(cache_dir, f"{ticker}.json"), "w") as f:
+        json.dump(arrays, f)
+    return len(arrays["close"]), []
+
+
+def _encode_ticker(df: pd.DataFrame, dates: list[str]) -> tuple[dict | None, list[str]]:
+    """Right-align one frame against `dates` without touching disk.
+
+    Returns (arrays, missing sessions); arrays is None when there is nothing to
+    write. Separated from write_ticker so `build` can decide whether the whole
+    refresh is safe before any of it lands.
     """
     df = df[df.index.isin(pd.to_datetime(dates))].sort_index()
+    serialized = [c for c in ("Open", "High", "Low", "Close", "Volume")
+                  if c in df.columns]
+    df = df.dropna(subset=serialized, how="any")
     if df.empty:
-        return 0, []
+        return None, []
     tail = [d for d in dates if pd.Timestamp(d) >= df.index[0]]
     missing = [d for d in tail if pd.Timestamp(d) not in df.index]
     if missing:
-        return 0, missing
-    df = df.reindex(pd.to_datetime(tail))
-    with open(os.path.join(cache_dir, f"{ticker}.json"), "w") as f:
-        json.dump(_frame_to_arrays(df), f)
-    return len(df), []
+        return None, missing
+    return _frame_to_arrays(df.reindex(pd.to_datetime(tail))), []
 
 
 def build(tickers: list[str], period: str = "2y", check_only: bool = False,
@@ -131,31 +153,44 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
     # changing it re-dates every series that is not being rewritten. Growing the
     # calendar at the front is harmless (the tail each series occupies is
     # unchanged); anything else silently shifts the tickers left behind.
-    stale = sorted(set(pricecache.available_tickers(cache_dir)) - set(fetched))
     shifts_the_tail = bool(old_calendar) and calendar[-len(old_calendar):] != old_calendar
-    if stale and shifts_the_tail:
-        raise ValueError(
-            f"this fetch adds sessions at the end of the calendar, which re-dates "
-            f"every cached series it does not rewrite ({len(stale)} would be left "
-            f"behind: {', '.join(stale[:6])}{'...' if len(stale) > 6 else ''}). "
-            f"Refetch the whole cache instead of a subset."
-        )
+    cached = set(pricecache.available_tickers(cache_dir))
 
+    # Encode everything before writing anything. A ticker skipped for a gap is
+    # left behind by a calendar change exactly as a ticker that was never
+    # fetched is, and that is only known after encoding — so the refusal below
+    # has to come after this loop, and no file may be written before it.
+    encoded: dict[str, dict] = {}
     summary = {"tickers": {}, "skipped": {}, "sessions": len(calendar),
                "first": calendar[0], "last": calendar[-1]}
-    if check_only:
-        return summary
-
-    with open(os.path.join(cache_dir, "_dates.json"), "w") as f:
-        json.dump(calendar, f)
     for ticker, fresh in fetched.items():
-        written, missing = write_ticker(ticker, fresh, calendar, cache_dir)
+        arrays, missing = _encode_ticker(fresh, calendar)
         if missing:
             summary["skipped"][ticker] = missing
             logger.warning("%s: not written, %d session(s) missing from the feed "
                            "(first %s)", ticker, len(missing), missing[0])
         else:
-            summary["tickers"][ticker] = written
+            encoded[ticker] = arrays
+            summary["tickers"][ticker] = len(arrays["close"])
+
+    left_behind = sorted((cached - set(encoded)) | (set(summary["skipped"]) & cached))
+    if left_behind and shifts_the_tail:
+        raise ValueError(
+            f"this fetch adds sessions at the end of the calendar, which re-dates "
+            f"every cached series it does not rewrite ({len(left_behind)} would be "
+            f"left behind: {', '.join(left_behind[:6])}"
+            f"{'...' if len(left_behind) > 6 else ''}). "
+            f"Refetch the whole cache instead of a subset."
+        )
+
+    if check_only:
+        return summary
+
+    with open(os.path.join(cache_dir, "_dates.json"), "w") as f:
+        json.dump(calendar, f)
+    for ticker, arrays in encoded.items():
+        with open(os.path.join(cache_dir, f"{ticker}.json"), "w") as f:
+            json.dump(arrays, f)
     pricecache.clear_cache()
     return summary
 

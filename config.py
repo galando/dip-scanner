@@ -89,12 +89,31 @@ SIM_MIN_HOLD_SESSIONS = 10           # ...but not before N sessions have passed.
                                      # bounce-done rule sold the book for one or
                                      # two percent almost immediately. Across
                                      # eight rolling 30-day windows this lifts
-                                     # the mean from +4.6% to +5.7% on capital
-                                     # and beats SPY in 7 of 8 instead of 5,
-                                     # while leaving the worst window unchanged.
-                                     # Anything from 5 to 15 measures the same to
-                                     # within a tenth of a point; 10 is the middle
-                                     # of that plateau rather than its argmax, so
-                                     # the choice is not fitted to the noise.
+                                     # the mean from +4.53% to +5.55% on capital
+                                     # and beats SPY in 7 of 8 instead of 6,
+                                     # while leaving the worst window unchanged
+                                     # (-0.10%).
+                                     #
+                                     # The measured curve does not have an
+                                     # interior peak: it rises all the way out
+                                     # (0 -> +4.53, 5 -> +5.32, 10 -> +5.55,
+                                     # 15 -> +5.84) and saturates at 20, where it
+                                     # equals deleting the bounce-done rule
+                                     # outright (+6.10%). That saturation is the
+                                     # window running out, not the strategy
+                                     # topping out — a 30-day run holds ~21
+                                     # sessions, so a floor near 20 simply never
+                                     # fires and stops being measured. Anything
+                                     # past ~15 is therefore untestable on this
+                                     # sample rather than better on it.
+                                     #
+                                     # So the data says "this exit costs money
+                                     # over one month", not "10 is optimal". 10
+                                     # is a judgment: high enough to capture most
+                                     # of the measured gain, low enough that the
+                                     # rule still fires inside a run and stays
+                                     # under measurement, and it keeps a way out
+                                     # of a completed bounce for the longer
+                                     # holding periods this cache cannot see.
                                      # See src/tune.py, src/validate.py, README.
 SIM_THESIS_BREAK_MIN_LOSS_PCT = 5.0  # Thesis breaking only triggers if also down >= X% from entry
