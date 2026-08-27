@@ -115,6 +115,7 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
     """
     import src.data as data                      # imported late: needs network
 
+    os.makedirs(cache_dir, exist_ok=True)
     fetched = data.fetch_prices(tickers, period=period)
     if not fetched:
         raise RuntimeError(

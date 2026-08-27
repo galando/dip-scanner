@@ -268,7 +268,9 @@ def book_size(state: dict) -> float:
 
     Read from the run's own state rather than from config, so changing
     SIM_CASH_PER_STOCK or SIM_MAX_POSITIONS mid-run cannot retroactively rescale
-    the percentage already reported for that run.
+    the percentage already reported for that run. run() sizes the book from the
+    same state for the same reason — a denominator frozen at the run's start
+    while the numerator followed a new config would be worse than either.
     """
     return float(state.get("cash_per_stock", 0.0)) * int(state.get("max_positions", 0))
 
@@ -300,6 +302,14 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
     end = date.fromisoformat(state["end_date"])
     is_final = today >= end
 
+    # Slot count and slot size belong to the run, not to the current config.
+    # Editing either mid-run used to change how the book was sized while
+    # book_size() kept dividing by what the run started with — a bigger book
+    # reported against a smaller denominator. The run holds what it opened with;
+    # a new size takes effect on the next run.
+    cash_per_stock = float(state.get("cash_per_stock", cfg.SIM_CASH_PER_STOCK))
+    max_positions = int(state.get("max_positions", cfg.SIM_MAX_POSITIONS))
+
     # --- 1) Evaluate exits on open positions ---
     sells, survivors = [], []
     for pos in state["positions"]:
@@ -325,15 +335,15 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
 
     # --- 2) Fill free slots with fresh strict signals (not on the final day) ---
     buys = []
-    free = cfg.SIM_MAX_POSITIONS - len(state["positions"])
+    free = max_positions - len(state["positions"])
     if not is_final and free > 0:
         exclude = {p["ticker"] for p in state["positions"]} | {s["ticker"] for s in sells}
         for c in scan_candidates(regime, prices_map, cfg, exclude)[:free]:
-            shares = cfg.SIM_CASH_PER_STOCK / c["price"]
+            shares = cash_per_stock / c["price"]
             pos = {
                 "ticker": c["ticker"], "name": c["name"],
                 "entry_price": c["price"], "entry_date": today.isoformat(),
-                "shares": shares, "cost_basis": cfg.SIM_CASH_PER_STOCK,
+                "shares": shares, "cost_basis": cash_per_stock,
                 "entry_reason": c["details"],
             }
             state["positions"].append(pos)
@@ -348,7 +358,7 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
     total_cost = sum(p["cost_basis"] for p in state["positions"])
     total_value = sum(p["cost_basis"] + r["pnl"] for p, r in zip(state["positions"], open_rows))
     realized_pnl = sum(c["pnl"] for c in state["closed"])
-    closed_invested = sum(c.get("cost_basis", cfg.SIM_CASH_PER_STOCK) for c in state["closed"])
+    closed_invested = sum(c.get("cost_basis", cash_per_stock) for c in state["closed"])
     total_invested_all = total_cost + closed_invested
 
     # --- 4) Notifications ---
@@ -371,7 +381,7 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
                 "shares": pos["shares"], "pnl": row["pnl"], "pnl_pct": row["pnl_pct"],
                 "sell_reason": telegram.BOOK_CLOSED,
             })
-        total_invested = sum(c["cost_basis"] if "cost_basis" in c else cfg.SIM_CASH_PER_STOCK
+        total_invested = sum(c["cost_basis"] if "cost_basis" in c else cash_per_stock
                              for c in state["closed"])
         total_final = total_invested + sum(c["pnl"] for c in state["closed"])
         _send(telegram.compose_summary(

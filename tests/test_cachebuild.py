@@ -215,3 +215,23 @@ def test_a_frame_with_no_usable_bars_is_skipped_not_a_crash(tmp_path, monkeypatc
     summary = cachebuild.build(["AAA"], cache_dir=str(cache))
     assert "AAA" in summary["skipped"]
     assert not (cache / "AAA.json").exists()
+
+
+def test_build_creates_the_cache_directory(tmp_path, monkeypatch):
+    """Bootstrapping used to fail after the whole network fetch was spent."""
+    import pandas as pd
+    import src.cachebuild as cachebuild
+    import src.pricecache as pricecache
+
+    cache = tmp_path / "prices"          # does not exist
+    dates = ["2026-01-05", "2026-01-06"]
+    closes = [1.0, 2.0]
+    fetched = {"AAA": pd.DataFrame(
+        {"Open": closes, "High": closes, "Low": closes, "Close": closes,
+         "Volume": [10, 10]}, index=pd.to_datetime(dates))}
+    monkeypatch.setattr("src.data.fetch_prices", lambda *a, **k: fetched)
+
+    summary = cachebuild.build(["AAA"], cache_dir=str(cache))
+    assert summary["tickers"] == {"AAA": 2}
+    pricecache.clear_cache()
+    assert len(pricecache.load_frame("AAA", str(cache))) == 2

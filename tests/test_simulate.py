@@ -258,3 +258,30 @@ def _cfg_with(**overrides):
     import types
     base = {k: getattr(config, k) for k in dir(config) if k.isupper()}
     return types.SimpleNamespace(**{**base, **overrides})
+
+
+def test_an_in_flight_run_keeps_the_book_it_opened_with(tmp_path, monkeypatch):
+    """Raising SIM_MAX_POSITIONS mid-run must not deploy more than the book."""
+    import json
+    import types
+    import src.simulate as simulate
+
+    state = {"status": "RUNNING", "start_date": "2026-06-01", "end_date": "2026-07-01",
+             "cash_per_stock": 1000.0, "max_positions": 10,
+             "positions": [], "closed": [], "updates_sent": []}
+    path = tmp_path / "sim.json"
+    path.write_text(json.dumps(state))
+
+    cfg = types.SimpleNamespace(**{k: getattr(simulate.config, k)
+                                   for k in dir(simulate.config) if k.isupper()})
+    cfg.SIM_MAX_POSITIONS = 15          # bumped after the run started
+    cfg.SIM_CASH_PER_STOCK = 2000.0
+
+    monkeypatch.setattr(simulate.regime_mod, "compute_regime", lambda: "RISK_ON")
+    monkeypatch.setattr(simulate.universe, "get_sp500_tickers", lambda: [])
+    monkeypatch.setattr(simulate.data, "fetch_prices", lambda *a, **k: {})
+    monkeypatch.setattr(simulate, "_send", lambda msg: None)
+
+    out = simulate.run(date(2026, 6, 10), cfg=cfg, state_path=str(path))
+    assert simulate.book_size(out) == 10000.0    # not 30000
+    assert out["max_positions"] == 10

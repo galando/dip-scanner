@@ -408,10 +408,17 @@ def compose_summary(closed: list[dict], open_rows: list[dict], start_date: str,
     total_pnl = total_final - total_invested
     at_end = [c for c in closed if c.get("sell_reason") == BOOK_CLOSED]
     closed = [c for c in closed if c.get("sell_reason") != BOOK_CLOSED]
-    if at_end:
-        open_rows = [{"ticker": c["ticker"], "entry_price": c["entry_price"],
-                      "current_price": c["exit_price"], "pnl": c["pnl"],
-                      "pnl_pct": c["pnl_pct"]} for c in at_end]
+    # Rows for the month-end closures come from `closed`, where the totals were
+    # taken from. Anything the caller passed that is not one of them is still
+    # shown, so this does not quietly depend on every caller mirroring its open
+    # rows into `closed` first.
+    marked = {c["ticker"] for c in at_end}
+    open_rows = (
+        [{"ticker": c["ticker"], "entry_price": c["entry_price"],
+          "current_price": c["exit_price"], "pnl": c["pnl"],
+          "pnl_pct": c["pnl_pct"]} for c in at_end]
+        + [r for r in (open_rows or []) if r["ticker"] not in marked]
+    )
     lines = [
         "🏁 סיכום סימולציית החודש / Monthly Simulation — SUMMARY",
         f"📅 {start_date} → {end_date}\n",

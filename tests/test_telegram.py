@@ -248,3 +248,19 @@ def test_month_end_positions_are_listed_once_not_twice():
     assert msg.index("AAA:") < still_open
     # Both positions still count as resolved trades.
     assert "Winning trades: 2/2" in msg
+
+
+def test_open_rows_not_mirrored_into_closed_are_still_shown():
+    """The summary must not depend on every caller mirroring its open rows."""
+    from src.telegram import compose_summary, BOOK_CLOSED
+    at_end = {"ticker": "BBB", "name": "BBB", "entry_price": 50.0,
+              "exit_price": 52.0, "entry_date": "2026-06-10",
+              "exit_date": "2026-06-30", "shares": 20.0, "cost_basis": 1000.0,
+              "pnl": 40.0, "pnl_pct": 4.0, "sell_reason": BOOK_CLOSED}
+    stray = {"ticker": "CCC", "entry_price": 10.0, "current_price": 11.0,
+             "pnl": 100.0, "pnl_pct": 10.0}
+
+    msg = compose_summary([at_end], [stray], "2026-06-01", "2026-06-30",
+                          1000.0, 1040.0, 0.0, book_size=10000.0)
+    assert msg.count("BBB:") == 1
+    assert msg.count("CCC:") == 1
