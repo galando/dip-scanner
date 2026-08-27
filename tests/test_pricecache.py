@@ -65,3 +65,15 @@ def test_lookback_caps_the_window(cache):
 def test_trading_days_are_inclusive_of_both_ends(cache):
     days = pricecache.trading_days(date(2026, 1, 5), date(2026, 1, 6), cache)
     assert days == [date(2026, 1, 5), date(2026, 1, 6)]
+
+
+def test_a_ticker_file_with_no_bars_is_skipped_not_a_crash(tmp_path):
+    """dates[-0:] is the whole calendar, so an empty file used to raise."""
+    import json
+    import src.pricecache as pricecache
+
+    (tmp_path / "_dates.json").write_text(json.dumps(["2026-01-05", "2026-01-06"]))
+    (tmp_path / "AAA.json").write_text(json.dumps(
+        {"open": [], "high": [], "low": [], "close": [], "volume": []}))
+    pricecache.clear_cache()
+    assert pricecache.load_frame("AAA", str(tmp_path)) is None

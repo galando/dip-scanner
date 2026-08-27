@@ -44,18 +44,28 @@ def hold_forward(state: dict, as_of: date, until: date = None, cfg=config,
                  cache_dir: str = pricecache.CACHE_DIR) -> dict:
     """Mark the book open on `as_of` at `until`'s close, as if nothing was sold."""
     until = until or date.fromisoformat(pricecache.load_dates(cache_dir)[-1])
+    slot_size = float(state.get("cash_per_stock", cfg.SIM_CASH_PER_STOCK))
     rows, cost, value = [], 0.0, 0.0
+    # A position with no cached prices cannot be valued, and dropping it quietly
+    # would leave the basket total reading as the whole book while describing a
+    # subset of it. It is reported alongside the total instead.
+    unpriced: list[str] = []
     for pos in positions_open_on(state, as_of):
         frame = pricecache.load_frame(pos["ticker"], cache_dir)
         if frame is None:
+            unpriced.append(pos["ticker"])
             continue
         window = frame[frame.index <= str(until)]
         entry_window = frame[frame.index <= pos["entry_date"]]
         if window.empty or entry_window.empty:
+            unpriced.append(pos["ticker"])
             continue
         price = float(window["Close"].iloc[-1])
         adj_entry = float(entry_window["Close"].iloc[-1])
-        basis = pos.get("cost_basis", cfg.SIM_CASH_PER_STOCK)
+        # The run's own slot size, not the live config: a row written before
+        # cost_basis was recorded still belongs to the book that paid for it,
+        # and charging it today's SIM_CASH_PER_STOCK would rescale a past result.
+        basis = pos.get("cost_basis", slot_size)
         rows.append({
             "ticker": pos["ticker"],
             "entry_date": pos["entry_date"],
@@ -72,6 +82,7 @@ def hold_forward(state: dict, as_of: date, until: date = None, cfg=config,
         "as_of": as_of.isoformat(),
         "until": until.isoformat(),
         "rows": rows,
+        "unpriced": unpriced,
         "total_cost": cost,
         "total_value": value,
         "pnl": value - cost,
@@ -80,7 +91,18 @@ def hold_forward(state: dict, as_of: date, until: date = None, cfg=config,
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        raise SystemExit(
+            "usage: python -m src.whatif AS_OF [UNTIL]\n"
+            "  AS_OF  the day whose open book to value (e.g. 2026-06-29)\n"
+            "  UNTIL  the day to value it at (default: the last cached session)"
+        )
     state = simulate.load_sim()
+    if state is None:
+        raise SystemExit(
+            f"no simulation state at {config.SIM_STATE_PATH} — nothing to value. "
+            f"This reads the book a past run held; run the simulation first."
+        )
     as_of = date.fromisoformat(sys.argv[1])
     until = date.fromisoformat(sys.argv[2]) if len(sys.argv) > 2 else None
     result = hold_forward(state, as_of, until)
@@ -93,3 +115,7 @@ if __name__ == "__main__":
               f"{r['price_pct']:+6.1f}%  ${r['pnl']:+8.2f}{extra}")
     print(f"\n  Basket: ${result['total_cost']:.0f} -> ${result['total_value']:.0f}  "
           f"${result['pnl']:+.0f} ({result['pnl_pct']:+.1f}%)")
+    if result["unpriced"]:
+        print(f"\n  NOT INCLUDED — no cached prices for "
+              f"{len(result['unpriced'])} of the book: "
+              + ", ".join(result["unpriced"]))

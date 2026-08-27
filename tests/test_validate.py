@@ -67,8 +67,34 @@ def test_walk_forward_splits_chronologically_and_never_tunes_on_test(cache, aler
                                 cache_dir=cache, alerts_path=alerts)
     assert out["train_windows"] and out["test_windows"]
     assert not set(map(tuple, out["train_windows"])) & set(map(tuple, out["test_windows"]))
-    assert out["train_windows"][-1][0] < out["test_windows"][0][0]
+    # Distinct tuples are not enough: rolling windows overlap, so a split can
+    # put the same sessions on both sides while every tuple differs.
+    train_end = max(b for _, b in out["train_windows"])
+    assert all(a > train_end for a, _ in out["test_windows"])
     assert out["chosen"]["SIM_MIN_HOLD_SESSIONS"] in (0, 5)
+
+
+def test_walk_forward_refuses_a_split_whose_halves_share_sessions(cache, alerts):
+    """30-day windows on a 7-day step overlap; there is no clean half to test on."""
+    wins = [(date(2026, 1, 1), date(2026, 1, 31)),
+            (date(2026, 1, 8), date(2026, 2, 7)),
+            (date(2026, 1, 15), date(2026, 2, 14)),
+            (date(2026, 1, 22), date(2026, 2, 21))]
+    with pytest.raises(ValueError, match="no out-of-sample half"):
+        validate.walk_forward({"SIM_MIN_HOLD_SESSIONS": [0]}, wins,
+                              {"SIM_MIN_HOLD_SESSIONS": 0},
+                              cache_dir=cache, alerts_path=alerts)
+
+
+def test_walk_forward_can_be_run_unpurged_but_only_on_purpose(cache, alerts):
+    wins = [(date(2026, 1, 1), date(2026, 1, 31)),
+            (date(2026, 1, 8), date(2026, 2, 7)),
+            (date(2026, 1, 15), date(2026, 2, 14)),
+            (date(2026, 1, 22), date(2026, 2, 21))]
+    out = validate.walk_forward({"SIM_MIN_HOLD_SESSIONS": [0]}, wins,
+                                {"SIM_MIN_HOLD_SESSIONS": 0},
+                                cache_dir=cache, alerts_path=alerts, purge=False)
+    assert len(out["test_windows"]) == 2
 
 
 def test_walk_forward_needs_enough_windows_to_split(cache, alerts):
@@ -109,3 +135,25 @@ def test_bootstrap_counts_add_up(cache, alerts):
     assert (b["windows_improved"] + b["windows_unchanged"] + b["windows_worsened"]
             == b["n_windows"] == len(b["per_window_delta"]))
     assert b["ci_low"] <= b["observed_mean_delta"] <= b["ci_high"]
+
+
+class TestVerdictFollowsTheNumbers:
+    """The verdict used to be fixed text that survived the numbers changing."""
+
+    def test_consistent_only_when_nothing_got_worse(self):
+        from src.validate import direction_phrase
+        assert direction_phrase(4, 0, 8).startswith("Direction is consistent")
+        assert not direction_phrase(4, 3, 8).startswith("Direction is consistent")
+
+    def test_leans_positive_when_more_helped_than_hurt(self):
+        from src.validate import direction_phrase
+        assert direction_phrase(4, 3, 8).startswith("Direction leans positive")
+        assert "helps in 4 of 8" in direction_phrase(4, 3, 8)
+
+    def test_a_tie_is_called_a_tie(self):
+        from src.validate import direction_phrase
+        assert direction_phrase(3, 3, 8).startswith("Direction is a coin flip")
+
+    def test_a_losing_change_is_called_negative(self):
+        from src.validate import direction_phrase
+        assert direction_phrase(2, 5, 8).startswith("Direction is negative")

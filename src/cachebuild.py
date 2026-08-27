@@ -70,18 +70,40 @@ def write_ticker(ticker: str, df: pd.DataFrame, dates: list[str],
     represent a hole. Rather than filling one in, which would put invented
     prices and volumes on disk indistinguishable from real ones, a ticker with
     gaps is reported and not written.
+
+    A batch download pads every ticker out to the union of all their sessions,
+    so a ticker that did not trade that day arrives as a row of NaN rather than
+    as an absent row. Those are dropped first: an all-NaN row is a hole wearing
+    a date, and writing it would put `NaN` in the JSON, hand replay a price that
+    silently books as a losing trade, and let an IPO present full calendar depth
+    to BACKTEST_MIN_HISTORY.
+    """
+    arrays, missing = _encode_ticker(df, dates)
+    if missing or arrays is None:
+        return 0, missing
+    with open(os.path.join(cache_dir, f"{ticker}.json"), "w") as f:
+        json.dump(arrays, f)
+    return len(arrays["close"]), []
+
+
+def _encode_ticker(df: pd.DataFrame, dates: list[str]) -> tuple[dict | None, list[str]]:
+    """Right-align one frame against `dates` without touching disk.
+
+    Returns (arrays, missing sessions); arrays is None when there is nothing to
+    write. Separated from write_ticker so `build` can decide whether the whole
+    refresh is safe before any of it lands.
     """
     df = df[df.index.isin(pd.to_datetime(dates))].sort_index()
+    serialized = [c for c in ("Open", "High", "Low", "Close", "Volume")
+                  if c in df.columns]
+    df = df.dropna(subset=serialized, how="any")
     if df.empty:
-        return 0, []
+        return None, []
     tail = [d for d in dates if pd.Timestamp(d) >= df.index[0]]
     missing = [d for d in tail if pd.Timestamp(d) not in df.index]
     if missing:
-        return 0, missing
-    df = df.reindex(pd.to_datetime(tail))
-    with open(os.path.join(cache_dir, f"{ticker}.json"), "w") as f:
-        json.dump(_frame_to_arrays(df), f)
-    return len(df), []
+        return None, missing
+    return _frame_to_arrays(df.reindex(pd.to_datetime(tail))), []
 
 
 def build(tickers: list[str], period: str = "2y", check_only: bool = False,
@@ -93,6 +115,7 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
     """
     import src.data as data                      # imported late: needs network
 
+    os.makedirs(cache_dir, exist_ok=True)
     fetched = data.fetch_prices(tickers, period=period)
     if not fetched:
         raise RuntimeError(
@@ -108,8 +131,16 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
         problems = compare(existing, fresh)
         if problems:
             conflicts[ticker] = problems[:5]
-    if conflicts:
-        detail = "; ".join(f"{t}: {p[0]}" for t, p in list(conflicts.items())[:5])
+    # In check mode a conflict is the finding, not a reason to abort: raising
+    # here suppressed the calendar summary and every other refusal the run had
+    # already worked out, which is the opposite of what --check is for.
+    conflict_detail = "; ".join(f"{t}: {p[0]}" for t, p in list(conflicts.items())[:5])
+    would_refuse: list[str] = []
+    if conflicts and check_only:
+        would_refuse.append(
+            f"{len(conflicts)} ticker(s) contradict the cache ({conflict_detail})")
+    elif conflicts:
+        detail = conflict_detail
         raise ValueError(
             f"fresh data contradicts the cache for {len(conflicts)} ticker(s) "
             f"({detail}). Results already published from this cache would be "
@@ -131,31 +162,90 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
     # changing it re-dates every series that is not being rewritten. Growing the
     # calendar at the front is harmless (the tail each series occupies is
     # unchanged); anything else silently shifts the tickers left behind.
-    stale = sorted(set(pricecache.available_tickers(cache_dir)) - set(fetched))
     shifts_the_tail = bool(old_calendar) and calendar[-len(old_calendar):] != old_calendar
-    if stale and shifts_the_tail:
+    cached = set(pricecache.available_tickers(cache_dir))
+
+    # Encode everything before writing anything. A ticker skipped for a gap is
+    # left behind by a calendar change exactly as a ticker that was never
+    # fetched is, and that is only known after encoding — so the refusal below
+    # has to come after this loop, and no file may be written before it.
+    encoded: dict[str, dict] = {}
+    summary = {"tickers": {}, "skipped": {}, "sessions": len(calendar),
+               "first": calendar[0], "last": calendar[-1],
+               "would_refuse": would_refuse}
+    for ticker, fresh in fetched.items():
+        arrays, missing = _encode_ticker(fresh, calendar)
+        # arrays is None with no missing sessions when the feed returned nothing
+        # usable at all — every row NaN, or none of them on the calendar. That is
+        # a skip like any other, not a ticker to write and not a crash.
+        if arrays is None:
+            summary["skipped"][ticker] = missing
+            if missing:
+                logger.warning("%s: not written, %d session(s) missing from the "
+                               "feed (first %s)", ticker, len(missing), missing[0])
+            else:
+                logger.warning("%s: not written, the feed returned no usable bars "
+                               "on the calendar", ticker)
+        else:
+            encoded[ticker] = arrays
+            summary["tickers"][ticker] = len(arrays["close"])
+
+    # A shorter --period than the cache already holds arrives as a clean,
+    # conflict-free, calendar-preserving overwrite that happens to delete years
+    # of bars. Nothing above notices: compare() only sees the sessions the two
+    # share, and the calendar is a union so it never shrinks. Refuse instead.
+    truncated = []
+    for ticker, arrays in encoded.items():
+        old_frame = pricecache.load_frame(ticker, cache_dir)
+        if old_frame is not None and len(arrays["close"]) < len(old_frame):
+            truncated.append(f"{ticker} {len(old_frame)}->{len(arrays['close'])}")
+    if truncated and check_only:
+        summary["would_refuse"].append(
+            f"{len(truncated)} ticker(s) would lose bars: {', '.join(sorted(truncated)[:6])}")
+    elif truncated:
         raise ValueError(
-            f"this fetch adds sessions at the end of the calendar, which re-dates "
-            f"every cached series it does not rewrite ({len(stale)} would be left "
-            f"behind: {', '.join(stale[:6])}{'...' if len(stale) > 6 else ''}). "
-            f"Refetch the whole cache instead of a subset."
+            f"this fetch returns fewer bars than the cache already holds for "
+            f"{len(truncated)} ticker(s) ({', '.join(sorted(truncated)[:6])}"
+            f"{'...' if len(truncated) > 6 else ''}). Writing it would delete "
+            f"history the published results were measured on. Fetch at least as "
+            f"deep as the cache — the default --period is 2y."
         )
 
-    summary = {"tickers": {}, "skipped": {}, "sessions": len(calendar),
-               "first": calendar[0], "last": calendar[-1]}
+    # Every series is stored as "the last N calendar dates", so the format
+    # cannot hold a ticker whose data stops before the calendar does. Once the
+    # calendar grows at the end, any cached ticker not rewritten in this fetch
+    # is exactly that, and there is no way to re-date it correctly — hence the
+    # refusal below rather than a silent shift.
+    left_behind = sorted((cached - set(encoded)) | (set(summary["skipped"]) & cached))
+    if left_behind and shifts_the_tail and check_only:
+        summary["would_refuse"].append(
+            f"{len(left_behind)} cached ticker(s) would be left behind by a longer "
+            f"calendar: {', '.join(left_behind[:6])}")
+    elif left_behind and shifts_the_tail:
+        raise ValueError(
+            f"this fetch adds sessions at the end of the calendar, which re-dates "
+            f"every cached series it does not rewrite ({len(left_behind)} would be "
+            f"left behind: {', '.join(left_behind[:6])}"
+            f"{'...' if len(left_behind) > 6 else ''}). "
+            f"Fetch those tickers too (--tickers), or, if the feed has no recent "
+            f"bars for them at all, delete their files: a series stored as 'the "
+            f"last N calendar dates' cannot end before the calendar does."
+        )
+
     if check_only:
         return summary
 
-    with open(os.path.join(cache_dir, "_dates.json"), "w") as f:
-        json.dump(calendar, f)
-    for ticker, fresh in fetched.items():
-        written, missing = write_ticker(ticker, fresh, calendar, cache_dir)
-        if missing:
-            summary["skipped"][ticker] = missing
-            logger.warning("%s: not written, %d session(s) missing from the feed "
-                           "(first %s)", ticker, len(missing), missing[0])
-        else:
-            summary["tickers"][ticker] = written
+    # Every series is addressed by position against the calendar, so a half-done
+    # write leaves the rest of the cache silently re-dated. Stage all of it, then
+    # rename: the exposed window shrinks from the length of the write to the
+    # length of the renames.
+    staged = {os.path.join(cache_dir, "_dates.json"): calendar}
+    staged.update({os.path.join(cache_dir, f"{t}.json"): a for t, a in encoded.items()})
+    for path, payload in staged.items():
+        with open(path + ".tmp", "w") as f:
+            json.dump(payload, f)
+    for path in staged:
+        os.replace(path + ".tmp", path)
     pricecache.clear_cache()
     return summary
 
@@ -179,14 +269,19 @@ def main() -> None:
     verb = "would cover" if args.check else "cached"
     print(f"{verb} {summary['sessions']} sessions, "
           f"{summary['first']} .. {summary['last']}")
+    if summary["skipped"]:
+        verb = "would be skipped" if args.check else "skipped"
+        print(f"{len(summary['skipped'])} {verb} for gaps in the feed: "
+              + ", ".join(sorted(summary["skipped"])))
+    # A check that stays quiet about what the real run would refuse on is not a
+    # check — the user would find out by running it for real.
+    for reason in summary.get("would_refuse", []):
+        print(f"WOULD REFUSE: {reason}")
     if not args.check:
         short = {t: n for t, n in summary["tickers"].items()
                  if n < summary["sessions"]}
         print(f"{len(summary['tickers'])} tickers written"
               + (f"; {len(short)} with a shorter history than the calendar" if short else ""))
-        if summary["skipped"]:
-            print(f"{len(summary['skipped'])} skipped for gaps in the feed: "
-                  + ", ".join(sorted(summary["skipped"])))
 
 
 if __name__ == "__main__":

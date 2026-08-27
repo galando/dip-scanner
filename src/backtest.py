@@ -271,6 +271,24 @@ def main() -> None:
         deep = {t: df for t, df in loaded.items()
                 if len(df) > config.BACKTEST_MIN_HISTORY}
         shallow = sorted(set(loaded) - set(deep) - {"SPY"})
+
+        # SPY is the benchmark and the regime input, never a signal candidate, so
+        # the depth filter must not remove it: dropping it turns every date
+        # RISK_ON (the looser gate-2 thresholds) and every excess return None,
+        # which reads as a completed backtest rather than as one missing its
+        # control. It needs 200 sessions to place SPY against its own 200dma —
+        # more than BACKTEST_MIN_HISTORY asks of a candidate — so say plainly
+        # which of the two it fails.
+        spy_cached = loaded.get("SPY")
+        if spy_cached is not None:
+            deep["SPY"] = spy_cached
+        if spy_cached is None:
+            logger.warning("no cached SPY: regime is RISK_ON throughout and the "
+                           "report carries no benchmark. Cache SPY and re-run.")
+        elif len(spy_cached) < 200:
+            logger.warning("cached SPY holds %d sessions, fewer than the 200 needed "
+                           "for its own 200dma: regime is RISK_ON throughout. The "
+                           "benchmark is still computed.", len(spy_cached))
         if not deep or (len(deep) == 1 and "SPY" in deep):
             deepest = max((len(df) for df in loaded.values()), default=0)
             raise SystemExit(
@@ -286,7 +304,9 @@ def main() -> None:
                 ", ".join(shallow[:8]) + ("..." if len(shallow) > 8 else ""))
         prices_map = deep
         tickers = [t for t in deep if t != "SPY"]
-        depth = min(len(df) for df in deep.values())
+        # SPY is in `deep` unconditionally now, so exclude it from the depth
+        # the report quotes — that number describes the candidates scanned.
+        depth = min(len(df) for t, df in deep.items() if t != "SPY")
         args.period = f"cache ({depth}+ sessions, {len(tickers)} tickers)"
         logger.info("Backtesting %d cached tickers over %s", len(tickers), args.period)
     else:

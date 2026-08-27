@@ -54,7 +54,8 @@ MAX_SIGNAL_AGE_DAYS = 4
 
 
 def _actionable(alerts: dict[str, list[str]], sessions: list[date],
-                max_age_days: int = MAX_SIGNAL_AGE_DAYS) -> dict[str, list[str]]:
+                max_age_days: int = MAX_SIGNAL_AGE_DAYS,
+                window_start: date | None = None) -> dict[str, list[str]]:
     """Move each alert onto the first session at or after the day it fired.
 
     Almost every alert already lands on a trading day, but a handful do not —
@@ -65,11 +66,23 @@ def _actionable(alerts: dict[str, list[str]], sessions: list[date],
     window, not this one, even if it is only a day or two old: letting it in
     would make two adjacent windows share entries, which quietly destroys the
     independence that `src/validate.py` relies on. So a signal must have fired
-    on or after the first session, and must not be staler than `max_age_days`
+    on or after the window opened, and must not be staler than `max_age_days`
     by the time a session comes round to act on it.
+
+    The boundary is `window_start` — the day the window opens — not the first
+    session in it. A window that opens on a weekend has its first session on the
+    Monday, and using that instead would throw away exactly the alerts the
+    roll-forward above exists to keep.
+
+    One alert is lost at each seam between consecutive windows: one stamped on a
+    non-trading day after a window's last session has no session left to roll
+    onto, and the next window opens after it fired. Keeping it would mean one
+    window acting on a signal the window before it also saw, which is the
+    sharing this rule exists to prevent, so the loss is deliberate. It is zero
+    on the windows shipped here.
     """
     out: dict[str, list[str]] = {}
-    first = sessions[0]
+    first = window_start or sessions[0]
     for day, tickers in sorted(alerts.items()):
         fired = date.fromisoformat(day)
         if fired < first:
@@ -104,7 +117,7 @@ def replay(start: date, end: date = None, cfg=config, cache_dir: str = pricecach
     sessions = pricecache.trading_days(start, end, cache_dir)
     if not sessions:
         raise ValueError(f"No cached sessions in {start}..{end}")
-    alerts = _actionable(load_alerts(alerts_path), sessions)
+    alerts = _actionable(load_alerts(alerts_path), sessions, window_start=start)
 
     state = {
         "status": "RUNNING",
@@ -185,6 +198,8 @@ def replay(start: date, end: date = None, cfg=config, cache_dir: str = pricecach
                 buys, sells, today.isoformat(),
                 open_rows=open_rows, total_cost=total_cost, total_value=total_value,
                 realized_pnl=realized_pnl, total_invested_all=total_cost + closed_invested,
+                book_size=simulate.book_size(state),
+                positions_opened=len(state["closed"]) + len(state["positions"]),
             ))
 
         if is_final:
@@ -195,13 +210,13 @@ def replay(start: date, end: date = None, cfg=config, cache_dir: str = pricecach
                     "exit_price": row["current_price"], "exit_date": today.isoformat(),
                     "shares": pos["shares"], "cost_basis": pos["cost_basis"],
                     "pnl": row["pnl"], "pnl_pct": row["pnl_pct"],
-                    "sell_reason": "החודש הסתיים — סגירת הספרים / month ended — book closed",
+                    "sell_reason": telegram.BOOK_CLOSED,
                 })
             invested = sum(c.get("cost_basis", cfg.SIM_CASH_PER_STOCK) for c in state["closed"])
             final = invested + sum(c["pnl"] for c in state["closed"])
             messages.append(telegram.compose_summary(
                 state["closed"], open_rows, state["start_date"], state["end_date"],
-                invested, final, realized_pnl,
+                invested, final, realized_pnl, book_size=simulate.book_size(state),
             ))
             state["positions"] = []
             state["status"] = "DONE"
@@ -215,6 +230,7 @@ def replay(start: date, end: date = None, cfg=config, cache_dir: str = pricecach
                 len(state["closed"]), today.isoformat(),
                 (today - start).days, (end - start).days,
                 total_invested_all=total_cost + closed_invested,
+                book_size=simulate.book_size(state),
             ))
             state["updates_sent"].extend(m.isoformat() for m in due)
 
@@ -264,6 +280,12 @@ def performance(state: dict, cfg=config, benchmark: str = "SPY",
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        raise SystemExit(
+            "usage: python -m src.replay START [END]\n"
+            "  START  first day of the window (e.g. 2026-07-28)\n"
+            "  END    last day (default: START + SIM_DURATION_DAYS)"
+        )
     start = date.fromisoformat(sys.argv[1])
     end = date.fromisoformat(sys.argv[2]) if len(sys.argv) > 2 else None
     result = replay(start, end)

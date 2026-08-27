@@ -194,8 +194,15 @@ The summary reports two different returns, because they are easy to confuse:
 (`SIM_CASH_PER_STOCK` x `SIM_MAX_POSITIONS` = $10,000) and is the figure to
 compare against a buy-and-hold benchmark; **return on turnover** is P&L over the
 sum of every position's cost basis, so a book that recycles the same $10,000
-through 26 trades reports $26,000 "invested" and a correspondingly smaller
-percentage. The live Telegram summary prints the turnover figure.
+through 24 trades reports $24,000 of turnover and a correspondingly smaller
+percentage.
+
+Capital is the headline everywhere, Telegram included. Turnover is printed
+beneath it, labelled as turnover, because it says how hard the capital worked —
+but it is not a return: its denominator grows every time the bot trades again,
+so the same dollars read differently depending only on how often they moved. The
+June 2026 run ended -$730 on a $10,000 book. Reported on turnover that was
+-3.0%; on capital it is -7.3%.
 
 **`src/whatif.py` — value a past book at a later date, as if nothing was sold.**
 
@@ -302,40 +309,59 @@ constraint, not the code.
 
 ### What the first pass changed, and what it rejected
 
-Measured over eight rolling 30-day windows (return on the $10,000 book; the
-full table is in `reports/tuning-exit-rules.txt`):
+Measured over eight rolling 30-day windows (return on the $10,000 book; the full
+table, and the command that regenerates it, are in
+`reports/tuning-exit-rules.txt`):
 
-| | mean | worst window | beats SPY |
-|---|---|---|---|
-| before | +4.63% | +0.11% | 5/8 |
-| `SIM_MIN_HOLD_SESSIONS = 10` | **+5.70%** | +0.11% | **7/8** |
-
-Every value from 5 to 15 sessions measures the same to within a tenth of a
-point. 10 is the middle of that plateau, not its argmax — picking the best cell
-of a flat surface is fitting to noise.
+| | mean | worst window | beats SPY | trades |
+|---|---|---|---|---|
+| before | +4.53% | −0.10% | 6/8 | 159 |
+| `SIM_MIN_HOLD_SESSIONS = 10` | **+5.55%** | −0.10% | **7/8** | 132 |
 
 The exit-free hold curve is what motivated it: a signal is worth about 0% one
 session after it fires and about +5.6% after 21, because RSI recovers within a
 day or two of a bounce while the reversion being bought takes weeks. Without a
 floor the bounce-done rule was closing the book almost immediately for one or
-two percent. The floor is monotone from 3 to 15 sessions and never makes the
-worst window worse, which is why it was adopted over simply raising
-`SIM_RSI_EXIT` — that lifts the mean about as much but gives up the worst
-window (+0.11% to −0.37%) and effectively deletes the rule instead of deferring
-it.
+two percent.
 
-Three changes that looked good on the two headline months were **rejected**
-after the rolling windows disagreed:
+That curve is 38 signals, all from June 2026 — not the whole cache. Measuring a
+21-session forward return needs 21 sessions of data after the signal, so the
+most recent month of signals cannot appear in it at all, and the report says so
+above the table rather than calling it "every cached signal".
 
-- `SIM_THESIS_BREAK_MIN_LOSS_PCT = 3` gained a point on both headline months and
-  turned the worst rolling window from +0.11% to −1.37%.
-- `SIM_TAKE_PROFIT_PCT = 15` doubled one month's return, but that rested on
-  about four positions and neighbouring grid cells swung by two points.
-- `SIM_STOP_LOSS_PCT` is inert in every window tested — the thesis-break rule
-  reaches losers first, so the stop never fires and there is nothing to tune.
+**10 is not the argmax, and the table has no argmax to find.** The curve rises
+all the way out — 0 → +4.53, 5 → +5.32, 10 → +5.55, 15 → +5.84 — and saturates
+at 20, where the row is identical to deleting the bounce-done rule (+6.10%, 124
+trades). What the data prefers is "off".
 
-That two of the three survived a 720-combination grid over two months and still
-failed out of sample is the whole argument for the rolling check.
+The saturation is the measurement ending, not the strategy topping out: a 30-day
+run holds about 21 sessions, so a floor near 20 can barely fire, and every
+setting past ~15 collapses onto the same "never sells on RSI" behaviour. So the
+gain from 15 and 20 is untested here rather than earned here. 10 is the largest
+floor that still fires inside a run — it stays under measurement, and it keeps a
+way out of a completed bounce over the holding periods this cache is too short
+to see. That is a judgment call about a rule worth keeping, stated as one,
+rather than a number the data picked.
+
+For the same reason, raising `SIM_RSI_EXIT` is not a competing option: at 75 it
+measures identically to "off" (+6.10%), because RSI never gets that high on a
+position this book holds. Raising the threshold and deferring the rule are the
+same intervention here; only the untestable part beyond a month tells them
+apart.
+
+What the rolling windows **rejected**:
+
+- `SIM_THESIS_BREAK_MIN_LOSS_PCT = 3` buys the best worst-window in the table
+  (+1.29%) with the worst mean (+3.91%) and only 4 of 8 windows beating SPY. It
+  trades upside for downside rather than adding anything.
+- `SIM_TAKE_PROFIT_PCT = 15` and `= 20` are the same row (+4.82%): above 15% the
+  rule stops firing inside a month, so there is nothing there to tune.
+- `SIM_STOP_LOSS_PCT = 10` moves almost nothing (+4.64% vs +4.53%, 161 vs 159
+  trades). Thesis-break reaches most losers first, so the stop rarely gets to
+  act.
+
+That a change can survive a 720-combination grid over two months and still fail
+out of sample is the whole argument for the rolling check.
 
 ### Checking a result away from where it was fitted
 
@@ -350,16 +376,24 @@ PYTHONPATH=. python -m src.validate
   On the current cache only **two** windows are genuinely independent — that is
   the honest sample size, and the report leads with it.
 - **Walk-forward.** Settings are chosen on the earlier windows and scored on the
-  later ones, which had no vote in the choice.
+  later ones, which had no vote in the choice. Test windows that share sessions
+  with the training half are purged first — splitting a list of overlapping
+  windows down the middle does not separate the data, it only looks like it
+  does. On the current cache nothing survives that purge, so the check reports
+  that it cannot run rather than a leaked number.
 - **Paired bootstrap.** Both settings are replayed on the same windows, then
   whole windows are resampled to put an interval around the difference. The
   resampling unit is the window, so with overlapping windows the interval is
   optimistic — a floor on the uncertainty, never a p-value.
 
-On the current cache the verdict is deliberately unflattering: the direction is
-consistent and the adopted setting beats both the baseline and the
-walk-forward's own pick on the held-out windows, but the 95% interval on the two
-independent windows includes zero. The size of the effect is not established.
+On the current cache the verdict is deliberately unflattering: the change helps
+in 4 of the 8 overlapping windows and hurts in 3 — a lean, not a consistency —
+the 95% interval on the two independent windows is [+0.00, +2.74] pp and
+includes zero, and there is **no out-of-sample check at all**, because the cache
+is too short to split into halves that do not share sessions. So the evidence
+for `SIM_MIN_HOLD_SESSIONS` is a direction and a mechanism, not a measured size.
+Every sentence of that verdict is computed from the numbers printed above it, so
+a fix that moves them moves the wording too.
 Deepening the cache is what changes that, which is what `src/cachebuild.py` is
 for.
 

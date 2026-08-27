@@ -32,6 +32,14 @@ _DATES_FILE = "_dates.json"
 
 
 def available_tickers(cache_dir: str = CACHE_DIR) -> list[str]:
+    """Tickers held in the cache. An absent cache holds none — it is not an error.
+
+    src/cachebuild.py asks this before it has built anything, and callers that
+    want to say "the cache is empty, here is how to fill it" cannot do so if
+    asking raises first.
+    """
+    if not os.path.isdir(cache_dir):
+        return []
     return sorted(
         f[:-5] for f in os.listdir(cache_dir)
         if f.endswith(".json") and not f.startswith("_")
@@ -68,7 +76,13 @@ def load_frame(ticker: str, cache_dir: str = CACHE_DIR) -> pd.DataFrame | None:
         return None
     with open(path) as f:
         raw = json.load(f)
-    dates = load_dates(cache_dir)[-len(raw["close"]):]
+    bars = len(raw["close"])
+    if not bars:
+        # `dates[-0:]` is the whole calendar, not nothing, so an empty file would
+        # be handed every date and raise a length mismatch — taking down every
+        # offline consumer over one bad file. It is simply a ticker with no data.
+        return None
+    dates = load_dates(cache_dir)[-bars:]
     return pd.DataFrame(
         {
             "Open": raw["open"],

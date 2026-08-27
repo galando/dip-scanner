@@ -14,6 +14,7 @@ instead of only the average, and why `pick` prefers settings that hold up on all
 of them over settings that win on one.
 """
 import itertools
+import statistics
 import types
 from datetime import date
 
@@ -59,17 +60,31 @@ def hold_curve(windows: list[tuple[date, date]], horizons: range = range(1, 22),
     horizon, so every row describes the same set of trades. Without it the late
     signals drop out of the long horizons and the curve partly reflects a
     changing sample rather than a changing holding period.
+
+    That filter is severe near the end of the cache, and it is not symmetric: a
+    signal needs `max(horizons)` sessions of data AFTER it, so the most recent
+    month of signals cannot appear at all. On the cache as shipped, 92 signals
+    become 38 and every survivor fired in a single month. `dropped` and `span`
+    in the return say so, because "every cached signal" is what this looks like
+    and is not what it is.
     """
     alerts = replay.load_alerts(alerts_path)
     entries: list[tuple[str, str]] = []           # (ticker, entry session)
     for start, end in windows:
         sessions = pricecache.trading_days(start, end, cache_dir)
-        for day, tickers in replay._actionable(alerts, sessions).items():
+        # window_start, so a window opening on a non-trading day measures the
+        # same signals the book would actually have bought (see replay._actionable).
+        actionable = replay._actionable(alerts, sessions, window_start=start)
+        for day, tickers in actionable.items():
             if day == sessions[-1].isoformat():
                 continue                          # the book never buys on the last day
             for ticker in tickers:
                 entries.append((ticker, day))
+    # Overlapping windows contain the same signal more than once; without this
+    # the curve weights a signal by how many windows happen to cover it.
+    entries = sorted(set(entries))
 
+    offered = len(entries)
     if balanced:
         longest = max(horizons)
         entries = [
@@ -77,6 +92,7 @@ def hold_curve(windows: list[tuple[date, date]], horizons: range = range(1, 22),
             if (frame := pricecache.load_frame(ticker, cache_dir)) is not None
             and 0 <= frame.index.get_indexer([day])[0] < len(frame) - longest
         ]
+    span = (min(d for _, d in entries), max(d for _, d in entries)) if entries else (None, None)
 
     rows = []
     for n in horizons:
@@ -98,8 +114,14 @@ def hold_curve(windows: list[tuple[date, date]], horizons: range = range(1, 22),
         rows.append({
             "days": n,
             "signals": len(returns),
+            "offered": offered,
+            "dropped": offered - len(entries),
+            "span": span,
             "mean_pct": sum(returns) / len(returns),
-            "median_pct": returns[len(returns) // 2],
+            # statistics.median, not returns[n // 2]: for an even sample the
+            # latter takes the upper of the two middle values, which biased every
+            # median in this table high and disagreed with knob_table below.
+            "median_pct": statistics.median(returns),
             "win_rate_pct": sum(1 for r in returns if r > 0) / len(returns) * 100.0,
         })
     return rows
@@ -112,6 +134,11 @@ def evaluate(settings: dict, windows: list[tuple[date, date]],
              cache_dir: str = pricecache.CACHE_DIR,
              alerts_path: str = replay.ALERTS_PATH) -> dict:
     """Replay every window under one settings dict."""
+    if not windows:
+        raise ValueError(
+            "no windows to evaluate — the cache and the alert log overlap by "
+            "less than one window. Deepen the cache, or shorten the window."
+        )
     cfg = with_overrides(**settings)
     per_window = []
     for start, end in windows:
@@ -292,9 +319,19 @@ def _fmt(settings: dict) -> str:
 
 
 def _print_curve() -> None:
-    print("Forward return of every cached signal, no exit rule applied:\n")
+    rows = hold_curve(WINDOWS)
+    if not rows:
+        print("No signal in the windows has data out to the longest horizon.")
+        return
+    head = rows[0]
+    print("Forward return by holding period, no exit rule applied.")
+    print(f"{head['signals']} of {head['offered']} signals in the windows can be "
+          f"measured out to {max(r['days'] for r in rows)} sessions;")
+    print(f"the other {head['dropped']} fired too near the end of the cache to have "
+          f"a forward return yet.")
+    print(f"Measured signals fired {head['span'][0]} .. {head['span'][1]}.\n")
     print(" days  signals    mean%   median%    win%")
-    for row in hold_curve(WINDOWS):
+    for row in rows:
         print(f"  {row['days']:3d}  {row['signals']:7d}   {row['mean_pct']:+6.2f}   "
               f"{row['median_pct']:+7.2f}   {row['win_rate_pct']:5.1f}")
 
@@ -316,7 +353,13 @@ def _print_sweep(top: int = 15) -> None:
 
     def line(entry: dict) -> str:
         per = "  ".join(f"{w['return_pct']:+6.2f}%" for w in entry["windows"])
-        return (f"{per}   worst-vs-SPY {entry['worst_excess_pct']:+6.2f}%   "
+        # worst_excess_pct is None when no window had a benchmark. sweep() sorts
+        # that case last rather than dropping it, so printing must survive it
+        # too — formatting it as a number killed the whole sweep at print time,
+        # after the ten minutes of replaying were already spent.
+        excess = entry["worst_excess_pct"]
+        excess_str = f"{excess:+6.2f}%" if excess is not None else "     — "
+        return (f"{per}   worst-vs-SPY {excess_str}   "
                 f"{entry['trades']:3d} trades   {_fmt(entry['settings'])}")
 
     print(f"{len(results)} combinations over {len(WINDOWS)} windows.")
@@ -328,6 +371,82 @@ def _print_sweep(top: int = 15) -> None:
         print("          " + line(entry))
 
 
+# One knob moved at a time, against the pre-tuning baseline. Kept as data and
+# printed by a command rather than transcribed into the report by hand: the
+# hand-written version of this table went stale the first time a fix moved the
+# numbers, and nothing failed to say so.
+KNOB_ROWS = [
+    ("min-hold=3", {"SIM_MIN_HOLD_SESSIONS": 3}),
+    ("min-hold=5", {"SIM_MIN_HOLD_SESSIONS": 5}),
+    ("min-hold=10", {"SIM_MIN_HOLD_SESSIONS": 10}),
+    ("min-hold=15", {"SIM_MIN_HOLD_SESSIONS": 15}),
+    ("min-hold=20", {"SIM_MIN_HOLD_SESSIONS": 20}),
+    (None, None),
+    ("RSI exit=65", {"SIM_RSI_EXIT": 65}),
+    ("RSI exit=70", {"SIM_RSI_EXIT": 70}),
+    ("RSI exit=75", {"SIM_RSI_EXIT": 75}),
+    ("RSI exit=off", {"SIM_RSI_EXIT": OFF}),
+    (None, None),
+    ("thesis break=3", {"SIM_THESIS_BREAK_MIN_LOSS_PCT": 3}),
+    ("thesis break=8", {"SIM_THESIS_BREAK_MIN_LOSS_PCT": 8}),
+    ("take profit=15", {"SIM_TAKE_PROFIT_PCT": 15}),
+    ("take profit=20", {"SIM_TAKE_PROFIT_PCT": 20}),
+    ("stop loss=10", {"SIM_STOP_LOSS_PCT": 10}),
+]
+
+
+def knob_table(windows, adopted: dict | None = None,
+               cache_dir: str = pricecache.CACHE_DIR,
+               alerts_path: str = replay.ALERTS_PATH) -> list[dict | None]:
+    """One row per single-knob change, plus the baseline, measured on `windows`.
+
+    `None` entries are blank separator lines, kept so the printed table groups
+    the knobs the way the report reads them.
+    """
+    rows: list[dict | None] = []
+    for label, override in [("baseline (pre-tuning)", {"SIM_MIN_HOLD_SESSIONS": 0})] + KNOB_ROWS:
+        if label is None:
+            rows.append(None)
+            continue
+        settings = {"SIM_MIN_HOLD_SESSIONS": 0, **override}
+        r = evaluate(settings, windows, cache_dir, alerts_path)
+        median = statistics.median(w["return_pct"] for w in r["windows"])
+        benchmarked = [w for w in r["windows"] if w["benchmark_pct"] is not None]
+        rows.append({
+            "label": label,
+            "settings": settings,
+            "mean_pct": r["mean_pct"],
+            "worst_pct": r["worst_pct"],
+            "median_pct": median,
+            "beats": sum(1 for w in benchmarked if w["return_pct"] > w["benchmark_pct"]),
+            "benchmarked": len(benchmarked),
+            "trades": r["trades"],
+            "adopted": adopted is not None and settings == {"SIM_MIN_HOLD_SESSIONS": 0, **adopted},
+        })
+    return rows
+
+
+def _print_knobs() -> None:
+    import src.validate as validate            # imported here: validate imports tune
+
+    first = min(replay.load_alerts())
+    lo, hi = validate._span()
+    windows = validate.rolling(max(lo, date.fromisoformat(first)), hi)
+
+    print(f"Each exit knob on its own, across {len(windows)} rolling 30-day windows.")
+    print("Return on the $10,000 book; 'beats SPY' counts windows, not dollars.")
+    print("Every row is measured against the PRE-TUNING baseline (min-hold=0).\n")
+    print(f"{'setting':32}{'mean':>8}{'worst':>8}{'median':>9}{'beats SPY':>12}{'trades':>8}")
+    for row in knob_table(windows, adopted={"SIM_MIN_HOLD_SESSIONS": config.SIM_MIN_HOLD_SESSIONS}):
+        if row is None:
+            print()
+            continue
+        mark = "   <-- adopted" if row["adopted"] else ""
+        print(f"{row['label'] + mark:32}{row['mean_pct']:+8.2f}{row['worst_pct']:+8.2f}"
+              f"{row['median_pct']:+9.2f}{row['beats']:>8}/{row['benchmarked']:<3}"
+              f"{row['trades']:>8}")
+
+
 if __name__ == "__main__":
     import sys
     command = sys.argv[1] if len(sys.argv) > 1 else "curve"
@@ -335,7 +454,9 @@ if __name__ == "__main__":
         _print_curve()
     elif command == "cost":
         _print_exit_cost()
+    elif command == "knobs":
+        _print_knobs()
     elif command == "sweep":
         _print_sweep()
     else:
-        raise SystemExit("usage: python -m src.tune [curve|cost|sweep]")
+        raise SystemExit("usage: python -m src.tune [curve|cost|knobs|sweep]")

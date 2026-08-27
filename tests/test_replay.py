@@ -126,3 +126,20 @@ def test_performance_without_a_benchmark_series(cache, tmp_path):
     state = {"start_date": "2026-01-02", "end_date": "2026-01-21", "closed": []}
     perf = replay.performance(state, benchmark="NOPE", cache_dir=cache)
     assert perf["benchmark_pct"] is None
+
+
+def test_alert_on_a_non_trading_window_start_rolls_into_the_window():
+    """The boundary is the day the window opens, not its first session."""
+    from datetime import date
+    from src.replay import _actionable
+
+    # Window opens on a Saturday; first session is the Monday.
+    sessions = [date(2026, 8, 3), date(2026, 8, 4), date(2026, 8, 5)]
+    alerts = {"2026-08-01": ["ACN"], "2026-07-28": ["OLD"]}
+
+    out = _actionable(alerts, sessions, window_start=date(2026, 8, 1))
+    assert out == {"2026-08-03": ["ACN"]}          # Saturday alert kept, rolled
+    assert "OLD" not in str(out)                    # from before the window: dropped
+
+    # Without the window start it would fall back to the first session and lose it.
+    assert _actionable(alerts, sessions) == {}
