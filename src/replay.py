@@ -73,6 +73,13 @@ def _actionable(alerts: dict[str, list[str]], sessions: list[date],
     session in it. A window that opens on a weekend has its first session on the
     Monday, and using that instead would throw away exactly the alerts the
     roll-forward above exists to keep.
+
+    One alert is lost at each seam between consecutive windows: one stamped on a
+    non-trading day after a window's last session has no session left to roll
+    onto, and the next window opens after it fired. Keeping it would mean one
+    window acting on a signal the window before it also saw, which is the
+    sharing this rule exists to prevent, so the loss is deliberate. It is zero
+    on the windows shipped here.
     """
     out: dict[str, list[str]] = {}
     first = window_start or sessions[0]
@@ -203,7 +210,7 @@ def replay(start: date, end: date = None, cfg=config, cache_dir: str = pricecach
                     "exit_price": row["current_price"], "exit_date": today.isoformat(),
                     "shares": pos["shares"], "cost_basis": pos["cost_basis"],
                     "pnl": row["pnl"], "pnl_pct": row["pnl_pct"],
-                    "sell_reason": "החודש הסתיים — סגירת הספרים / month ended — book closed",
+                    "sell_reason": telegram.BOOK_CLOSED,
                 })
             invested = sum(c.get("cost_basis", cfg.SIM_CASH_PER_STOCK) for c in state["closed"])
             final = invested + sum(c["pnl"] for c in state["closed"])

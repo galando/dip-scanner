@@ -324,6 +324,11 @@ day or two of a bounce while the reversion being bought takes weeks. Without a
 floor the bounce-done rule was closing the book almost immediately for one or
 two percent.
 
+That curve is 38 signals, all from June 2026 — not the whole cache. Measuring a
+21-session forward return needs 21 sessions of data after the signal, so the
+most recent month of signals cannot appear in it at all, and the report says so
+above the table rather than calling it "every cached signal".
+
 **10 is not the argmax, and the table has no argmax to find.** The curve rises
 all the way out — 0 → +4.53, 5 → +5.32, 10 → +5.55, 15 → +5.84 — and saturates
 at 20, where the row is identical to deleting the bounce-done rule (+6.10%, 124

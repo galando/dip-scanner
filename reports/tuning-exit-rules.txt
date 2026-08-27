@@ -1,4 +1,7 @@
-Forward return of every cached signal, no exit rule applied:
+Forward return by holding period, no exit rule applied.
+38 of 92 signals in the windows can be measured out to 21 sessions;
+the other 54 fired too near the end of the cache to have a forward return yet.
+Measured signals fired 2026-06-09 .. 2026-07-06.
 
  days  signals    mean%   median%    win%
     1       38    -0.05     -0.04    47.4
@@ -57,6 +60,10 @@ stop loss=10                       +4.64   -0.10    +4.75       7/8       161
 
 What the table says, and what it does not:
 
+  • The hold curve above is 38 signals from one month (June 2026), not the whole
+    cache. A signal needs 21 sessions of data after it to have a 21-session
+    forward return, so the most recent month of signals cannot appear at all.
+    Read it as "this is what the sample we can measure did", not as a law.
   • The bounce-done rule costs money over these windows, monotonically. Every
     step up in min-hold improves the mean, and at 20 sessions the row is
     identical to switching the rule off (+6.10%, 124 trades). There is no
@@ -80,6 +87,7 @@ fires inside a 30-day run, so it stays under measurement instead of quietly
 becoming "never sell on RSI", and it keeps a way out of a completed bounce for
 holding periods this cache is too short to see. See src/validate.py for what
 survives being tested off-sample: on the two windows that share no sessions the
-95% interval on the improvement still includes zero.
+95% interval on the improvement still includes zero, and the cache is too short
+to support a walk-forward split whose halves do not share sessions.
 
 Regenerate: PYTHONPATH=. python -m src.tune curve|cost|knobs

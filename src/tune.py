@@ -59,17 +59,31 @@ def hold_curve(windows: list[tuple[date, date]], horizons: range = range(1, 22),
     horizon, so every row describes the same set of trades. Without it the late
     signals drop out of the long horizons and the curve partly reflects a
     changing sample rather than a changing holding period.
+
+    That filter is severe near the end of the cache, and it is not symmetric: a
+    signal needs `max(horizons)` sessions of data AFTER it, so the most recent
+    month of signals cannot appear at all. On the cache as shipped, 92 signals
+    become 38 and every survivor fired in a single month. `dropped` and `span`
+    in the return say so, because "every cached signal" is what this looks like
+    and is not what it is.
     """
     alerts = replay.load_alerts(alerts_path)
     entries: list[tuple[str, str]] = []           # (ticker, entry session)
     for start, end in windows:
         sessions = pricecache.trading_days(start, end, cache_dir)
-        for day, tickers in replay._actionable(alerts, sessions).items():
+        # window_start, so a window opening on a non-trading day measures the
+        # same signals the book would actually have bought (see replay._actionable).
+        actionable = replay._actionable(alerts, sessions, window_start=start)
+        for day, tickers in actionable.items():
             if day == sessions[-1].isoformat():
                 continue                          # the book never buys on the last day
             for ticker in tickers:
                 entries.append((ticker, day))
+    # Overlapping windows contain the same signal more than once; without this
+    # the curve weights a signal by how many windows happen to cover it.
+    entries = sorted(set(entries))
 
+    offered = len(entries)
     if balanced:
         longest = max(horizons)
         entries = [
@@ -77,6 +91,7 @@ def hold_curve(windows: list[tuple[date, date]], horizons: range = range(1, 22),
             if (frame := pricecache.load_frame(ticker, cache_dir)) is not None
             and 0 <= frame.index.get_indexer([day])[0] < len(frame) - longest
         ]
+    span = (min(d for _, d in entries), max(d for _, d in entries)) if entries else (None, None)
 
     rows = []
     for n in horizons:
@@ -98,6 +113,9 @@ def hold_curve(windows: list[tuple[date, date]], horizons: range = range(1, 22),
         rows.append({
             "days": n,
             "signals": len(returns),
+            "offered": offered,
+            "dropped": offered - len(entries),
+            "span": span,
             "mean_pct": sum(returns) / len(returns),
             "median_pct": returns[len(returns) // 2],
             "win_rate_pct": sum(1 for r in returns if r > 0) / len(returns) * 100.0,
@@ -292,9 +310,19 @@ def _fmt(settings: dict) -> str:
 
 
 def _print_curve() -> None:
-    print("Forward return of every cached signal, no exit rule applied:\n")
+    rows = hold_curve(WINDOWS)
+    if not rows:
+        print("No signal in the windows has data out to the longest horizon.")
+        return
+    head = rows[0]
+    print("Forward return by holding period, no exit rule applied.")
+    print(f"{head['signals']} of {head['offered']} signals in the windows can be "
+          f"measured out to {max(r['days'] for r in rows)} sessions;")
+    print(f"the other {head['dropped']} fired too near the end of the cache to have "
+          f"a forward return yet.")
+    print(f"Measured signals fired {head['span'][0]} .. {head['span'][1]}.\n")
     print(" days  signals    mean%   median%    win%")
-    for row in hold_curve(WINDOWS):
+    for row in rows:
         print(f"  {row['days']:3d}  {row['signals']:7d}   {row['mean_pct']:+6.2f}   "
               f"{row['median_pct']:+7.2f}   {row['win_rate_pct']:5.1f}")
 

@@ -81,6 +81,11 @@ def hold_forward(state: dict, as_of: date, until: date = None, cfg=config,
 
 if __name__ == "__main__":
     state = simulate.load_sim()
+    if state is None:
+        raise SystemExit(
+            f"no simulation state at {config.SIM_STATE_PATH} — nothing to value. "
+            f"This reads the book a past run held; run the simulation first."
+        )
     as_of = date.fromisoformat(sys.argv[1])
     until = date.fromisoformat(sys.argv[2]) if len(sys.argv) > 2 else None
     result = hold_forward(state, as_of, until)

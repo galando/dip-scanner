@@ -246,6 +246,11 @@ def _pnl_emoji(pct: float) -> str:
     return "🟢" if pct > 0 else ("🔴" if pct < 0 else "⚪")
 
 
+# Written by simulate/replay onto positions the run closes at the last price
+# because the month ended, rather than because a rule fired.
+BOOK_CLOSED = "החודש הסתיים — סגירת הספרים / month ended — book closed"
+
+
 def _bottom_line(combined_pnl: float, book_size: float, turnover: float,
                  positions: int = 0, prefix: str = "   ") -> list[str]:
     """The headline percentage, taken on capital rather than on turnover.
@@ -393,8 +398,20 @@ def compose_summary(closed: list[dict], open_rows: list[dict], start_date: str,
     `total_invested` is turnover — every dollar that passed through a slot — so
     it is reported as turnover and the headline is taken on `book_size`. See
     _bottom_line for why.
+
+    Positions still open on the last day are moved into `closed` by the caller
+    (they have to be, for the totals to add up) and were also passed here as
+    `open_rows`, which listed every one of them twice. They are split back out
+    by their sell reason, so each appears once, under the heading that describes
+    how it ended.
     """
     total_pnl = total_final - total_invested
+    at_end = [c for c in closed if c.get("sell_reason") == BOOK_CLOSED]
+    closed = [c for c in closed if c.get("sell_reason") != BOOK_CLOSED]
+    if at_end:
+        open_rows = [{"ticker": c["ticker"], "entry_price": c["entry_price"],
+                      "current_price": c["exit_price"], "pnl": c["pnl"],
+                      "pnl_pct": c["pnl_pct"]} for c in at_end]
     lines = [
         "🏁 סיכום סימולציית החודש / Monthly Simulation — SUMMARY",
         f"📅 {start_date} → {end_date}\n",
@@ -419,8 +436,11 @@ def compose_summary(closed: list[dict], open_rows: list[dict], start_date: str,
                 f"{r['pnl_pct']:+.1f}% (${r['pnl']:+.0f})"
             )
         lines.append("")
-    winners = [t for t in closed if t["pnl"] > 0]
-    n_trades = len(closed)
+    # Count every position the run resolved, marked-at-month-end included —
+    # `closed` above holds only the ones a rule closed.
+    resolved = closed + at_end
+    winners = [t for t in resolved if t["pnl"] > 0]
+    n_trades = len(resolved)
     win_line = (
         f"✅ עסקאות מנצחות / Winning trades: {len(winners)}/{n_trades}"
         if n_trades else "אין עסקאות סגורות. (No closed trades.)"

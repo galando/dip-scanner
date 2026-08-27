@@ -221,3 +221,30 @@ def test_summary_falls_back_to_the_old_line_without_a_book_size():
     msg = compose_summary(closed, [], "2026-06-01", "2026-06-30", 2000.0, 2100.0, 100.0)
     assert "הושקע / Invested: $2000" in msg
     assert "on capital" not in msg
+
+
+def test_month_end_positions_are_listed_once_not_twice():
+    """The caller moves them into `closed` for the totals and also passes them here."""
+    from src.telegram import compose_summary, BOOK_CLOSED
+    rule_closed = {"ticker": "AAA", "name": "AAA", "entry_price": 100.0,
+                   "exit_price": 112.0, "entry_date": "2026-06-01",
+                   "exit_date": "2026-06-20", "shares": 10.0, "cost_basis": 1000.0,
+                   "pnl": 120.0, "pnl_pct": 12.0, "sell_reason": "target hit"}
+    at_end = {"ticker": "BBB", "name": "BBB", "entry_price": 50.0,
+              "exit_price": 52.0, "entry_date": "2026-06-10",
+              "exit_date": "2026-06-30", "shares": 20.0, "cost_basis": 1000.0,
+              "pnl": 40.0, "pnl_pct": 4.0, "sell_reason": BOOK_CLOSED}
+    open_rows = [{"ticker": "BBB", "entry_price": 50.0, "current_price": 52.0,
+                  "pnl": 40.0, "pnl_pct": 4.0}]
+
+    msg = compose_summary([rule_closed, at_end], open_rows, "2026-06-01",
+                          "2026-06-30", 2000.0, 2160.0, 120.0, book_size=10000.0)
+
+    assert msg.count("BBB:") == 1
+    assert msg.count("AAA:") == 1
+    # ...and it is listed under "still open at month end", not as a rule exit.
+    still_open = msg.index("Still open at month end")
+    assert msg.index("BBB:") > still_open
+    assert msg.index("AAA:") < still_open
+    # Both positions still count as resolved trades.
+    assert "Winning trades: 2/2" in msg

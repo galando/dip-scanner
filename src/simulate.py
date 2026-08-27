@@ -369,7 +369,7 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
                 "entry_price": pos["entry_price"], "entry_date": pos["entry_date"],
                 "exit_price": row["current_price"], "exit_date": today.isoformat(),
                 "shares": pos["shares"], "pnl": row["pnl"], "pnl_pct": row["pnl_pct"],
-                "sell_reason": "החודש הסתיים — סגירת הספרים / month ended — book closed",
+                "sell_reason": telegram.BOOK_CLOSED,
             })
         total_invested = sum(c["cost_basis"] if "cost_basis" in c else cfg.SIM_CASH_PER_STOCK
                              for c in state["closed"])

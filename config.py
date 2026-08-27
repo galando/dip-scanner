@@ -83,9 +83,13 @@ SIM_RSI_EXIT = 60.0                  # SELL: RSI recovered above this (bounce do
 SIM_MIN_HOLD_SESSIONS = 10           # ...but not before N sessions have passed.
                                      # RSI recovers a day or two after a bounce,
                                      # while the mean reversion itself takes
-                                     # weeks: measured over the cached months a
-                                     # signal is worth ~0% after one session and
-                                     # ~+5.6% after 21, so without this floor the
+                                     # weeks: over the 38 signals deep enough in
+                                     # the cache to measure (June 2026 — a signal
+                                     # needs 21 sessions after it to have a
+                                     # 21-session return, so the latest month
+                                     # cannot be measured at all) a signal is
+                                     # worth ~0% after one session and ~+5.6%
+                                     # after 21, so without this floor the
                                      # bounce-done rule sold the book for one or
                                      # two percent almost immediately. Across
                                      # eight rolling 30-day windows this lifts

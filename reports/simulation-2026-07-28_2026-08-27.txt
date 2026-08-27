@@ -464,26 +464,6 @@
    ↳ ההתאוששות הושלמה: RSI חזר ל-67 (+10.5%) / bounce done, RSI back to 67 (+10.5%)
 🟢 CPRT: $29.39 → $33.85  +15.2% ($+152)
    ↳ יעד רווח: עלתה +15.2% מהקנייה / target hit, up +15.2% from entry
-🔴 META: $590.24 → $573.00  -2.9% ($-29)
-   ↳ החודש הסתיים — סגירת הספרים / month ended — book closed
-🔴 IDXX: $567.84 → $550.61  -3.0% ($-30)
-   ↳ החודש הסתיים — סגירת הספרים / month ended — book closed
-🟢 QCOM: $162.67 → $164.95  +1.4% ($+14)
-   ↳ החודש הסתיים — סגירת הספרים / month ended — book closed
-🟢 CVNA: $70.09 → $75.69  +8.0% ($+80)
-   ↳ החודש הסתיים — סגירת הספרים / month ended — book closed
-🔴 APP: $310.79 → $307.85  -0.9% ($-9)
-   ↳ החודש הסתיים — סגירת הספרים / month ended — book closed
-🟢 RDDT: $151.71 → $156.47  +3.1% ($+31)
-   ↳ החודש הסתיים — סגירת הספרים / month ended — book closed
-🔴 LULU: $119.45 → $116.86  -2.2% ($-22)
-   ↳ החודש הסתיים — סגירת הספרים / month ended — book closed
-🔴 MNST: $47.43 → $46.82  -1.3% ($-13)
-   ↳ החודש הסתיים — סגירת הספרים / month ended — book closed
-🟢 ULTA: $527.85 → $535.36  +1.4% ($+14)
-   ↳ החודש הסתיים — סגירת הספרים / month ended — book closed
-🔴 ROL: $36.38 → $36.06  -0.9% ($-9)
-   ↳ החודש הסתיים — סגירת הספרים / month ended — book closed
 
 📗 פוזיציות שנותרו פתוחות בסוף (נסגרו לפי מחיר אחרון) / Still open at month end (marked at last price):
 🔴 META: $590.24 → $573.00  -2.9% ($-29)
