@@ -127,14 +127,19 @@ def evaluate(settings: dict, windows: list[tuple[date, date]],
             "winners": perf["winners"],
         })
     returns = [w["return_pct"] for w in per_window]
-    excess = [w["return_pct"] - (w["benchmark_pct"] or 0.0) for w in per_window]
+    # Only windows with a benchmark series can contribute an excess return.
+    # Treating a missing benchmark as "SPY returned 0%" would silently flatter
+    # every setting on exactly the windows where the comparison is unavailable.
+    excess = [w["return_pct"] - w["benchmark_pct"]
+              for w in per_window if w["benchmark_pct"] is not None]
     return {
         "settings": settings,
         "windows": per_window,
         "mean_pct": sum(returns) / len(returns),
         "worst_pct": min(returns),
-        "mean_excess_pct": sum(excess) / len(excess),
-        "worst_excess_pct": min(excess),
+        "benchmarked_windows": len(excess),
+        "mean_excess_pct": sum(excess) / len(excess) if excess else None,
+        "worst_excess_pct": min(excess) if excess else None,
         "trades": sum(w["trades"] for w in per_window),
     }
 
@@ -148,7 +153,15 @@ def sweep(grid: dict[str, list], windows: list[tuple[date, date]],
         evaluate(dict(zip(keys, combo)), windows, cache_dir, alerts_path)
         for combo in itertools.product(*(grid[k] for k in keys))
     ]
-    results.sort(key=lambda r: (-r["worst_excess_pct"], -r["mean_excess_pct"]))
+    # Rank on the worst window's excess over the benchmark. Settings with no
+    # benchmarked window at all sort last rather than crashing the comparison.
+    def key(r):
+        worst = r["worst_excess_pct"]
+        mean = r["mean_excess_pct"]
+        return (0 if worst is not None else 1,
+                -(worst if worst is not None else 0.0),
+                -(mean if mean is not None else 0.0))
+    results.sort(key=key)
     return results
 
 
@@ -159,11 +172,19 @@ def pick(results: list[dict], baseline: dict) -> dict:
     loses in the other, which is exactly the overfit a two-month sample invites.
     Requiring every window to improve is a weak guard, but it is a guard.
     """
-    base = next(r for r in results if r["settings"] == baseline)
+    base = next((r for r in results if r["settings"] == baseline), None)
+    if base is None:
+        raise KeyError(
+            f"the baseline {baseline} is not in the swept grid, so nothing can be "
+            f"compared against it — add its values to the grid (this happens as "
+            f"soon as a tuned value is adopted into config)"
+        )
     base_by_window = {w["start"]: w["return_pct"] for w in base["windows"]}
     robust = [
         r for r in results
-        if all(w["return_pct"] >= base_by_window[w["start"]] for w in r["windows"])
+        if r["settings"] != baseline
+        and all(w["return_pct"] >= base_by_window[w["start"]] for w in r["windows"])
+        and any(w["return_pct"] > base_by_window[w["start"]] for w in r["windows"])
     ]
     return {"baseline": base, "robust": robust}
 
@@ -251,14 +272,23 @@ GRID = {
 }
 
 
+_SHORT_NAMES = {"SIM_RSI_EXIT": "RSI", "SIM_TAKE_PROFIT_PCT": "TP",
+                "SIM_STOP_LOSS_PCT": "SL", "SIM_THESIS_BREAK_MIN_LOSS_PCT": "TB",
+                "SIM_MIN_HOLD_SESSIONS": "hold"}
+
+
+def _value(knob: str, value) -> str:
+    """Render a threshold, naming the out-of-range values that switch a rule off."""
+    if isinstance(value, str):
+        return value
+    if value >= OFF or (knob == "SIM_RSI_EXIT" and value > 100):
+        return "off"
+    return f"{value:g}"
+
+
 def _fmt(settings: dict) -> str:
-    short = {"SIM_RSI_EXIT": "RSI", "SIM_TAKE_PROFIT_PCT": "TP",
-             "SIM_STOP_LOSS_PCT": "SL", "SIM_THESIS_BREAK_MIN_LOSS_PCT": "TB"}
-    return "  ".join(
-        f"{short.get(k, k)}={'off' if v >= OFF or (k == 'SIM_RSI_EXIT' and v > 100) else v:g}"
-        if not isinstance(v, str) else f"{short.get(k, k)}={v}"
-        for k, v in settings.items()
-    )
+    return "  ".join(f"{_SHORT_NAMES.get(k, k)}={_value(k, v)}"
+                     for k, v in settings.items())
 
 
 def _print_curve() -> None:

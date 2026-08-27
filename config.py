@@ -89,8 +89,12 @@ SIM_MIN_HOLD_SESSIONS = 10           # ...but not before N sessions have passed.
                                      # bounce-done rule sold the book for one or
                                      # two percent almost immediately. Across
                                      # eight rolling 30-day windows this lifts
-                                     # the mean from +4.9% to +6.5% on capital
+                                     # the mean from +4.6% to +5.7% on capital
                                      # and beats SPY in 7 of 8 instead of 5,
                                      # while leaving the worst window unchanged.
-                                     # See src/tune.py and README.
+                                     # Anything from 5 to 15 measures the same to
+                                     # within a tenth of a point; 10 is the middle
+                                     # of that plateau rather than its argmax, so
+                                     # the choice is not fitted to the noise.
+                                     # See src/tune.py, src/validate.py, README.
 SIM_THESIS_BREAK_MIN_LOSS_PCT = 5.0  # Thesis breaking only triggers if also down >= X% from entry

@@ -38,23 +38,23 @@ Return on the $10,000 book; 'beats SPY' counts windows, not dollars.
 Every row is measured against the PRE-TUNING baseline (min-hold=0).
 
 setting                                mean   worst   median   beats SPY
-baseline (RSI60 TP12 SL12 TB5)        +4.92   +0.11    +4.57        5/8
+baseline (RSI60 TP12 SL12 TB5)        +4.63   +0.11    +4.48        5/8
 
-min-hold=3                            +5.23   +0.11    +5.29        6/8
-min-hold=5                            +5.99   +0.11    +6.60        7/8
-min-hold=10   <-- adopted             +6.49   +0.11    +6.98        7/8
-min-hold=15                           +6.62   +0.07    +6.94        7/8
+min-hold=3                            +5.05   +0.11    +5.14        6/8
+min-hold=5                            +5.83   +0.11    +6.39        7/8
+min-hold=10   <-- adopted             +5.70   +0.11    +6.11        7/8
+min-hold=15                           +5.77   +0.07    +6.42        7/8
 
-RSI exit=65                           +5.84   -0.04    +6.51        7/8
-RSI exit=70                           +6.35   -0.37    +7.28        7/8
-RSI exit=75                           +6.75   -0.37    +7.36        7/8
-RSI exit=off                          +6.75   -0.37    +7.36        7/8
+RSI exit=65                           +5.49   -0.04    +5.78        7/8
+RSI exit=70                           +5.79   -0.37    +6.32        7/8
+RSI exit=75                           +5.89   -0.37    +6.57        7/8
+RSI exit=off                          +5.89   -0.37    +6.57        7/8
 
-thesis break=3                        +4.48   -1.37    +4.40        6/8
-thesis break=8                        +4.83   -2.16    +5.81        6/8
-take profit=15                        +5.16   +0.11    +4.96        5/8
-take profit=20                        +5.16   +0.11    +4.96        5/8
-stop loss=10                          +5.00   +0.11    +4.73        6/8
+thesis break=3                        +4.51   +0.05    +4.76        7/8
+thesis break=8                        +4.53   -2.16    +5.11        5/8
+take profit=15                        +5.06   +0.11    +4.87        5/8
+take profit=20                        +5.06   +0.11    +4.87        5/8
+stop loss=10                          +4.71   +0.11    +4.80        6/8
 
 Rejected: thesis-break and take-profit each looked good on the two headline
 months and fell apart on the rolling set; the stop-loss never fires at all,

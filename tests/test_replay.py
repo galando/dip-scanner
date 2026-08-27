@@ -11,8 +11,9 @@ import src.replay as replay
 
 @pytest.fixture
 def cache(tmp_path):
-    # 20 sessions, enough history for a 14-period RSI to be defined.
-    dates = [f"2026-01-{d:02d}" for d in range(2, 22)]
+    # 20 sessions with a two-day gap at 10-11, so rolling a signal forward onto
+    # the next session is exercised the way a weekend exercises it.
+    dates = [f"2026-01-{d:02d}" for d in list(range(2, 10)) + list(range(12, 24))]
     (tmp_path / "_dates.json").write_text(json.dumps(dates))
     n = len(dates)
     for ticker, closes in {
@@ -30,12 +31,12 @@ def cache(tmp_path):
 
 
 def sessions(cache):
-    return pricecache.trading_days(date(2026, 1, 2), date(2026, 1, 21), cache)
+    return pricecache.trading_days(date(2026, 1, 2), date(2026, 1, 23), cache)
 
 
 def test_weekend_alert_rolls_to_the_next_session(cache):
-    out = replay._actionable({"2026-01-01": ["AAA"]}, sessions(cache))
-    assert out == {"2026-01-02": ["AAA"]}
+    out = replay._actionable({"2026-01-10": ["AAA"]}, sessions(cache))
+    assert out == {"2026-01-12": ["AAA"]}
 
 
 def test_alert_on_a_trading_day_stays_put(cache):
@@ -48,11 +49,20 @@ def test_stale_alerts_are_dropped_not_dragged_forward(cache):
     assert out == {}
 
 
+def test_an_alert_fired_before_the_window_belongs_to_the_previous_window(cache):
+    """Otherwise adjacent windows share entries and stop being independent."""
+    later = pricecache.trading_days(date(2026, 1, 12), date(2026, 1, 23), cache)
+    assert replay._actionable({"2026-01-09": ["AAA"]}, later) == {}
+    # ...but the same alert is picked up by the window it actually fired in.
+    earlier = pricecache.trading_days(date(2026, 1, 2), date(2026, 1, 9), cache)
+    assert replay._actionable({"2026-01-09": ["AAA"]}, earlier) == {"2026-01-09": ["AAA"]}
+
+
 def test_alerts_landing_on_the_same_session_merge_without_duplicates(cache):
     out = replay._actionable(
-        {"2025-12-31": ["AAA"], "2026-01-01": ["AAA", "BBB"]}, sessions(cache)
+        {"2026-01-10": ["AAA"], "2026-01-11": ["AAA", "BBB"]}, sessions(cache)
     )
-    assert out == {"2026-01-02": ["AAA", "BBB"]}
+    assert out == {"2026-01-12": ["AAA", "BBB"]}
 
 
 def test_most_oversold_ranks_first(cache):
@@ -109,7 +119,7 @@ def test_performance_separates_capital_from_turnover(cache, tmp_path, monkeypatc
     assert perf["capital"] == 2000.0 and perf["turnover"] == 3000.0
     assert perf["return_on_capital_pct"] == pytest.approx(3.75)
     assert perf["return_on_turnover_pct"] == pytest.approx(2.5)
-    assert perf["benchmark_pct"] == pytest.approx(19.0)
+    assert perf["benchmark_pct"] == pytest.approx(17.0)
 
 
 def test_performance_without_a_benchmark_series(cache, tmp_path):

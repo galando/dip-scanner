@@ -59,12 +59,21 @@ def _actionable(alerts: dict[str, list[str]], sessions: list[date],
 
     Almost every alert already lands on a trading day, but a handful do not —
     the 1 August 2026 batch was stamped on a Saturday. Those roll to the next
-    session; anything older than `max_age_days` (including every alert that
-    fired before the replay window opened) is discarded.
+    session.
+
+    An alert that fired *before* the window opened belongs to the previous
+    window, not this one, even if it is only a day or two old: letting it in
+    would make two adjacent windows share entries, which quietly destroys the
+    independence that `src/validate.py` relies on. So a signal must have fired
+    on or after the first session, and must not be staler than `max_age_days`
+    by the time a session comes round to act on it.
     """
     out: dict[str, list[str]] = {}
+    first = sessions[0]
     for day, tickers in sorted(alerts.items()):
         fired = date.fromisoformat(day)
+        if fired < first:
+            continue
         landing = next((s for s in sessions if s >= fired), None)
         if landing is None or (landing - fired).days > max_age_days:
             continue

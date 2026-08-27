@@ -8,7 +8,9 @@ What it does, driven by one run per trading day (GitHub Actions cron):
   • Mid-run : every day it re-checks open positions for an exit (take-profit /
               stop-loss / bounce-done / thesis-break) and sells, and fills any free
               slots with fresh dip signals — every buy and sell is announced with a reason.
-              A plain status update goes out every SIM_UPDATE_INTERVAL_DAYS days.
+              The bounce-done exit waits SIM_MIN_HOLD_SESSIONS before it may fire;
+              the two risk controls never wait. A plain status update goes out
+              every SIM_UPDATE_INTERVAL_DAYS days.
   • Month end: closes the book at the last price and sends a full summary.
 
 State lives in simulation.json and is committed back by the workflow, so the run

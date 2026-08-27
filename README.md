@@ -135,7 +135,8 @@ whole month for the reversion to happen.)
 - **Sells** use the mean-reversion exit, checked daily:
   - take-profit: recovered ≥ `SIM_TAKE_PROFIT_PCT` from entry,
   - stop-loss: fell ≥ `SIM_STOP_LOSS_PCT` from entry,
-  - bounce done: RSI back above `SIM_RSI_EXIT` while in profit,
+  - bounce done: RSI back above `SIM_RSI_EXIT` while in profit, but not before
+    `SIM_MIN_HOLD_SESSIONS` have passed — see *Tuning the Exit Rules* below,
   - thesis break: a fresh price-based trap (new lows / steep downtrend / gap-down).
 - **Every buy and sell is announced** on Telegram with its reason, a plain
   status update goes out every `SIM_UPDATE_INTERVAL_DAYS` (3) days, and a full
@@ -227,6 +228,28 @@ covers the tickers the simulation and the recorded alert stream actually
 touched, not the whole index — a replay reports any signal it could not price
 rather than silently skipping it.
 
+Fill or deepen it from the live feed (needs network access to the price feed):
+
+```bash
+PYTHONPATH=. python -m src.cachebuild --period 5y     # deepen everything cached
+PYTHONPATH=. python -m src.cachebuild --check         # compare, write nothing
+```
+
+Two things it will not do, because both would quietly invalidate results already
+published from the cache. It refuses to write when re-fetched bars **contradict**
+what is stored, rather than overwriting them; and because a series is addressed
+by position, it refuses a partial re-fetch that would **add sessions at the end**
+of the shared calendar and thereby re-date every ticker it is not rewriting. A
+ticker whose feed has a hole in the middle is reported and skipped rather than
+gap-filled — the store cannot represent a hole, and inventing a bar would put
+prices on disk indistinguishable from real ones.
+
+**Depth is the binding constraint on everything downstream.** The five-year
+`src/backtest.py` replay reads the cache with `--offline`, but needs more than
+`BACKTEST_MIN_HISTORY` (252) sessions per ticker before it can emit a single
+signal, and the validation in `src/validate.py` is only as strong as the number
+of independent windows the cache spans.
+
 ---
 
 ## Tuning the Exit Rules
@@ -284,8 +307,12 @@ full table is in `reports/tuning-exit-rules.txt`):
 
 | | mean | worst window | beats SPY |
 |---|---|---|---|
-| before | +4.92% | +0.11% | 5/8 |
-| `SIM_MIN_HOLD_SESSIONS = 10` | **+6.49%** | +0.11% | **7/8** |
+| before | +4.63% | +0.11% | 5/8 |
+| `SIM_MIN_HOLD_SESSIONS = 10` | **+5.70%** | +0.11% | **7/8** |
+
+Every value from 5 to 15 sessions measures the same to within a tenth of a
+point. 10 is the middle of that plateau, not its argmax — picking the best cell
+of a flat surface is fitting to noise.
 
 The exit-free hold curve is what motivated it: a signal is worth about 0% one
 session after it fires and about +5.6% after 21, because RSI recovers within a
@@ -309,6 +336,32 @@ after the rolling windows disagreed:
 
 That two of the three survived a 720-combination grid over two months and still
 failed out of sample is the whole argument for the rolling check.
+
+### Checking a result away from where it was fitted
+
+`src/validate.py` re-tests a candidate on windows it was not chosen on:
+
+```bash
+PYTHONPATH=. python -m src.validate
+```
+
+- **Non-overlapping windows.** The rolling windows used for tuning share
+  sessions, so eight of them carry nowhere near eight windows of information.
+  On the current cache only **two** windows are genuinely independent — that is
+  the honest sample size, and the report leads with it.
+- **Walk-forward.** Settings are chosen on the earlier windows and scored on the
+  later ones, which had no vote in the choice.
+- **Paired bootstrap.** Both settings are replayed on the same windows, then
+  whole windows are resampled to put an interval around the difference. The
+  resampling unit is the window, so with overlapping windows the interval is
+  optimistic — a floor on the uncertainty, never a p-value.
+
+On the current cache the verdict is deliberately unflattering: the direction is
+consistent and the adopted setting beats both the baseline and the
+walk-forward's own pick on the held-out windows, but the 95% interval on the two
+independent windows includes zero. The size of the effect is not established.
+Deepening the cache is what changes that, which is what `src/cachebuild.py` is
+for.
 
 ---
 
@@ -368,6 +421,10 @@ GitHub Actions (daily cron, after US close)
         +--> simulate.py   : the production exit rule, unchanged
 
    whatif.py   (on demand): value a past book later, as if nothing was sold
+
+   tune.py     (on demand): measure the exit rules, sweep their thresholds
+   validate.py (on demand): re-test a candidate away from where it was fitted
+   cachebuild.py           : fill data/prices from the live feed
 ```
 
 No always-on server. Zero cost. Everything runs inside the Action and exits.
