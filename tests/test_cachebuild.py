@@ -167,3 +167,51 @@ def test_a_ticker_skipped_for_a_gap_is_not_left_behind_by_a_longer_calendar(tmp_
 
     pricecache.clear_cache()
     assert json.loads((cache / "_dates.json").read_text()) == old_dates
+
+
+def test_a_shallower_refetch_is_refused_not_silently_written(tmp_path, monkeypatch):
+    """`--period 2y` over a 5y cache is a clean overwrite that deletes 3 years."""
+    import json
+    import pandas as pd
+    import src.cachebuild as cachebuild
+    import src.pricecache as pricecache
+
+    cache = tmp_path
+    dates = ["2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08"]
+    (cache / "_dates.json").write_text(json.dumps(dates))
+    (cache / "AAA.json").write_text(json.dumps(
+        {"open": [1.0, 2.0, 3.0, 4.0], "high": [1.0, 2.0, 3.0, 4.0],
+         "low": [1.0, 2.0, 3.0, 4.0], "close": [1.0, 2.0, 3.0, 4.0],
+         "volume": [10, 10, 10, 10]}))
+
+    shallow = [3.0, 4.0]
+    fetched = {"AAA": pd.DataFrame(
+        {"Open": shallow, "High": shallow, "Low": shallow, "Close": shallow,
+         "Volume": [10, 10]}, index=pd.to_datetime(dates[2:]))}
+    monkeypatch.setattr("src.data.fetch_prices", lambda *a, **k: fetched)
+
+    with pytest.raises(ValueError, match="fewer bars than the cache"):
+        cachebuild.build(["AAA"], cache_dir=str(cache))
+
+    pricecache.clear_cache()
+    assert len(pricecache.load_frame("AAA", str(cache))) == 4
+
+
+def test_a_frame_with_no_usable_bars_is_skipped_not_a_crash(tmp_path, monkeypatch):
+    import json
+    import numpy as np
+    import pandas as pd
+    import src.cachebuild as cachebuild
+
+    cache = tmp_path
+    dates = ["2026-01-05", "2026-01-06"]
+    (cache / "_dates.json").write_text(json.dumps(dates))
+    nan = [np.nan, np.nan]
+    fetched = {"AAA": pd.DataFrame(
+        {"Open": nan, "High": nan, "Low": nan, "Close": [1.0, 2.0],
+         "Volume": nan}, index=pd.to_datetime(dates))}
+    monkeypatch.setattr("src.data.fetch_prices", lambda *a, **k: fetched)
+
+    summary = cachebuild.build(["AAA"], cache_dir=str(cache))
+    assert "AAA" in summary["skipped"]
+    assert not (cache / "AAA.json").exists()

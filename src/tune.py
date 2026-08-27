@@ -316,7 +316,13 @@ def _print_sweep(top: int = 15) -> None:
 
     def line(entry: dict) -> str:
         per = "  ".join(f"{w['return_pct']:+6.2f}%" for w in entry["windows"])
-        return (f"{per}   worst-vs-SPY {entry['worst_excess_pct']:+6.2f}%   "
+        # worst_excess_pct is None when no window had a benchmark. sweep() sorts
+        # that case last rather than dropping it, so printing must survive it
+        # too — formatting it as a number killed the whole sweep at print time,
+        # after the ten minutes of replaying were already spent.
+        excess = entry["worst_excess_pct"]
+        excess_str = f"{excess:+6.2f}%" if excess is not None else "     — "
+        return (f"{per}   worst-vs-SPY {excess_str}   "
                 f"{entry['trades']:3d} trades   {_fmt(entry['settings'])}")
 
     print(f"{len(results)} combinations over {len(WINDOWS)} windows.")

@@ -371,7 +371,11 @@ PYTHONPATH=. python -m src.validate
   On the current cache only **two** windows are genuinely independent — that is
   the honest sample size, and the report leads with it.
 - **Walk-forward.** Settings are chosen on the earlier windows and scored on the
-  later ones, which had no vote in the choice.
+  later ones, which had no vote in the choice. Test windows that share sessions
+  with the training half are purged first — splitting a list of overlapping
+  windows down the middle does not separate the data, it only looks like it
+  does. On the current cache nothing survives that purge, so the check reports
+  that it cannot run rather than a leaked number.
 - **Paired bootstrap.** Both settings are replayed on the same windows, then
   whole windows are resampled to put an interval around the difference. The
   resampling unit is the window, so with overlapping windows the interval is
@@ -379,12 +383,12 @@ PYTHONPATH=. python -m src.validate
 
 On the current cache the verdict is deliberately unflattering: the change helps
 in 4 of the 8 overlapping windows and hurts in 3 — a lean, not a consistency —
-and although the adopted setting beats both the baseline and the walk-forward's
-own pick on the held-out windows (+6.70% vs +3.78% and +4.94%), the 95% interval
-on the two independent windows is [+0.00, +2.74] pp and includes zero. The size
-of the effect is not established. Every sentence of that verdict is computed
-from the numbers printed above it, so a fix that moves them moves the wording
-too.
+the 95% interval on the two independent windows is [+0.00, +2.74] pp and
+includes zero, and there is **no out-of-sample check at all**, because the cache
+is too short to split into halves that do not share sessions. So the evidence
+for `SIM_MIN_HOLD_SESSIONS` is a direction and a mechanism, not a measured size.
+Every sentence of that verdict is computed from the numbers printed above it, so
+a fix that moves them moves the wording too.
 Deepening the cache is what changes that, which is what `src/cachebuild.py` is
 for.
 

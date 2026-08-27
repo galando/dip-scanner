@@ -1,4 +1,7 @@
-Cache spans 2026-06-09 .. 2026-08-27
+Price calendar   2025-05-06 .. 2026-08-27  (330 sessions)
+Shallowest ticker holds 120 bars, from 2026-03-09
+Alert log        2026-06-09 .. 2026-08-27
+Evaluated on     2026-06-09 .. 2026-08-27  (the later of the two starts)
 
 8 overlapping windows vs 2 that share no sessions.
 The second number is the honest sample size.
@@ -18,12 +21,9 @@ The second number is the honest sample size.
 ====================================================================
 3. Walk-forward: settings chosen on the earlier half only
 ====================================================================
-  trained on 4 windows, tested on 4 (45 candidates)
-  chose: {'SIM_MIN_HOLD_SESSIONS': 0, 'SIM_RSI_EXIT': 101, 'SIM_THESIS_BREAK_MIN_LOSS_PCT': 3}
-                          train mean   test mean  test worst
-  baseline                    +5.29%      +3.78%      +2.02%
-  walk-forward choice         +6.14%      +4.94%      +4.03%
-  adopted setting                 —      +6.70%      +5.24%
+  Not available: no test window starts after the training half ends (2026-07-30); every candidate test window shares sessions with the windows the settings were chosen on, so there is no out-of-sample half here. A clean split needs the cache to cover about twice the span it does.
+  Nothing is reported here rather than a split whose halves share
+  sessions — that number would read as out-of-sample and would not be.
 
 ====================================================================
 Verdict
@@ -31,9 +31,9 @@ Verdict
   Direction leans positive: the change helps in 4 of 8 overlapping windows, hurts in 3.
   Size is not established: on the 2 windows that share no
   sessions the 95% interval is [+0.00, +2.74] pp — it includes zero.
-  The adopted setting was not chosen on the test windows and still beats
-  both the baseline and the walk-forward winner there (+6.70% vs +3.78% and +4.94%), which is weak evidence for it
-  and against the busier settings.
+  No out-of-sample check: the cache is too short to split without
+  the halves sharing sessions, so the only evidence here is the
+  direction above and an interval that includes zero.
 
   Deepen the cache and re-run to turn this from a direction into a size:
       PYTHONPATH=. python -m src.cachebuild --period 5y

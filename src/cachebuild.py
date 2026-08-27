@@ -165,13 +165,38 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
                "first": calendar[0], "last": calendar[-1]}
     for ticker, fresh in fetched.items():
         arrays, missing = _encode_ticker(fresh, calendar)
-        if missing:
+        # arrays is None with no missing sessions when the feed returned nothing
+        # usable at all — every row NaN, or none of them on the calendar. That is
+        # a skip like any other, not a ticker to write and not a crash.
+        if arrays is None:
             summary["skipped"][ticker] = missing
-            logger.warning("%s: not written, %d session(s) missing from the feed "
-                           "(first %s)", ticker, len(missing), missing[0])
+            if missing:
+                logger.warning("%s: not written, %d session(s) missing from the "
+                               "feed (first %s)", ticker, len(missing), missing[0])
+            else:
+                logger.warning("%s: not written, the feed returned no usable bars "
+                               "on the calendar", ticker)
         else:
             encoded[ticker] = arrays
             summary["tickers"][ticker] = len(arrays["close"])
+
+    # A shorter --period than the cache already holds arrives as a clean,
+    # conflict-free, calendar-preserving overwrite that happens to delete years
+    # of bars. Nothing above notices: compare() only sees the sessions the two
+    # share, and the calendar is a union so it never shrinks. Refuse instead.
+    truncated = []
+    for ticker, arrays in encoded.items():
+        old_frame = pricecache.load_frame(ticker, cache_dir)
+        if old_frame is not None and len(arrays["close"]) < len(old_frame):
+            truncated.append(f"{ticker} {len(old_frame)}->{len(arrays['close'])}")
+    if truncated:
+        raise ValueError(
+            f"this fetch returns fewer bars than the cache already holds for "
+            f"{len(truncated)} ticker(s) ({', '.join(sorted(truncated)[:6])}"
+            f"{'...' if len(truncated) > 6 else ''}). Writing it would delete "
+            f"history the published results were measured on. Fetch at least as "
+            f"deep as the cache — the default --period is 2y."
+        )
 
     left_behind = sorted((cached - set(encoded)) | (set(summary["skipped"]) & cached))
     if left_behind and shifts_the_tail:
