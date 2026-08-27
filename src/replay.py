@@ -185,6 +185,8 @@ def replay(start: date, end: date = None, cfg=config, cache_dir: str = pricecach
                 buys, sells, today.isoformat(),
                 open_rows=open_rows, total_cost=total_cost, total_value=total_value,
                 realized_pnl=realized_pnl, total_invested_all=total_cost + closed_invested,
+                book_size=simulate.book_size(state),
+                positions_opened=len(state["closed"]) + len(state["positions"]),
             ))
 
         if is_final:
@@ -201,7 +203,7 @@ def replay(start: date, end: date = None, cfg=config, cache_dir: str = pricecach
             final = invested + sum(c["pnl"] for c in state["closed"])
             messages.append(telegram.compose_summary(
                 state["closed"], open_rows, state["start_date"], state["end_date"],
-                invested, final, realized_pnl,
+                invested, final, realized_pnl, book_size=simulate.book_size(state),
             ))
             state["positions"] = []
             state["status"] = "DONE"
@@ -215,6 +217,7 @@ def replay(start: date, end: date = None, cfg=config, cache_dir: str = pricecach
                 len(state["closed"]), today.isoformat(),
                 (today - start).days, (end - start).days,
                 total_invested_all=total_cost + closed_invested,
+                book_size=simulate.book_size(state),
             ))
             state["updates_sent"].extend(m.isoformat() for m in due)
 

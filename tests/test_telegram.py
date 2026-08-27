@@ -138,3 +138,86 @@ def test_why_bought_line_still_reports_real_gate_details():
     assert "RSI 29" in line
     assert "higher low" in line
     assert "ROE 42%" in line
+
+
+# --------------------------------------------------------------------------- #
+# Return on capital, not on turnover
+# --------------------------------------------------------------------------- #
+def _closed(n, pnl_each, cost=1000.0):
+    """n identical closed round-trips, so only the trade COUNT varies."""
+    return [{
+        "ticker": f"T{i}", "name": f"T{i}",
+        "entry_price": 100.0, "exit_price": 100.0 + pnl_each / 10.0,
+        "entry_date": "2026-06-01", "exit_date": "2026-06-10",
+        "shares": 10.0, "cost_basis": cost,
+        "pnl": pnl_each, "pnl_pct": pnl_each / cost * 100.0,
+        "sell_reason": "test",
+    } for i in range(n)]
+
+
+def test_summary_headline_is_pnl_over_capital_not_turnover():
+    from src.telegram import compose_summary
+    closed = _closed(24, -730.0 / 24)          # the June run: -$730 on a $10k book
+    turnover = sum(c["cost_basis"] for c in closed)
+    msg = compose_summary(closed, [], "2026-06-08", "2026-06-30",
+                          turnover, turnover - 730.0, -730.0, book_size=10000.0)
+    assert "-7.3% על ההון / on capital ($10000)" in msg
+    assert "$10000" in msg and "שווי סופי / Final: $9270" in msg
+    # turnover survives, but only as turnover
+    assert "turnover: $24000" in msg
+    assert "of turnover, not a return" in msg
+
+
+def test_headline_does_not_move_when_only_the_trade_count_changes():
+    """The old denominator shrank the number every time the bot traded again."""
+    from src.telegram import compose_summary
+
+    def headline(n):
+        closed = _closed(n, -600.0 / n)
+        turnover = sum(c["cost_basis"] for c in closed)
+        msg = compose_summary(closed, [], "2026-06-01", "2026-06-30",
+                              turnover, turnover - 600.0, -600.0, book_size=10000.0)
+        return [ln for ln in msg.splitlines() if "on capital" in ln][0]
+
+    # Same -$600 on the same $10,000 book, reached in 6 trades or in 30.
+    assert headline(6) == headline(30)
+    assert "-6.0%" in headline(6)
+
+
+def test_update_reports_the_book_size_and_capital_return():
+    from src.telegram import compose_update
+    rows = [{"ticker": "AAA", "entry_price": 100.0, "current_price": 90.0,
+             "pnl": -100.0, "pnl_pct": -10.0}]
+    msg = compose_update(rows, 1000.0, 900.0, realized_pnl=-500.0, closed_count=8,
+                         date="2026-06-20", day_n=12, total_days=30,
+                         total_invested_all=9000.0, book_size=10000.0)
+    assert "גודל התיק / Book size: $10000" in msg
+    assert "-6.0% על ההון / on capital ($10000)" in msg   # (-100 + -500) / 10000
+    assert "turnover: $9000" in msg
+
+
+def test_trade_notice_reports_capital_return():
+    from src.telegram import compose_trade_notice
+    rows = [{"ticker": "AAA", "entry_price": 100.0, "current_price": 110.0,
+             "pnl": 100.0, "pnl_pct": 10.0}]
+    msg = compose_trade_notice([], [], "2026-06-20", open_rows=rows,
+                               total_cost=1000.0, total_value=1100.0,
+                               realized_pnl=400.0, total_invested_all=5000.0,
+                               book_size=10000.0, positions_opened=5)
+    assert "+5.0% על ההון / on capital ($10000)" in msg   # (100 + 400) / 10000
+    assert "in 5 positions" in msg
+
+
+def test_book_size_comes_from_the_run_not_from_live_config():
+    """A mid-run config change must not rescale a percentage already reported."""
+    from src.simulate import book_size
+    assert book_size({"cash_per_stock": 1000.0, "max_positions": 10}) == 10000.0
+    assert book_size({}) == 0.0
+
+
+def test_summary_falls_back_to_the_old_line_without_a_book_size():
+    from src.telegram import compose_summary
+    closed = _closed(2, 50.0)
+    msg = compose_summary(closed, [], "2026-06-01", "2026-06-30", 2000.0, 2100.0, 100.0)
+    assert "הושקע / Invested: $2000" in msg
+    assert "on capital" not in msg

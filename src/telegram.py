@@ -246,10 +246,45 @@ def _pnl_emoji(pct: float) -> str:
     return "🟢" if pct > 0 else ("🔴" if pct < 0 else "⚪")
 
 
+def _bottom_line(combined_pnl: float, book_size: float, turnover: float,
+                 positions: int = 0, prefix: str = "   ") -> list[str]:
+    """The headline percentage, taken on capital rather than on turnover.
+
+    A ten-slot, $1000-per-slot book only ever ties up $10,000, but a month of
+    round-trips cycles far more than that through those slots — the June 2026 run
+    opened 24 positions, $24,000 of turnover, on a $10,000 book. Dividing P&L by
+    turnover shrinks the percentage every time the bot trades again, so the same
+    dollars read differently depending only on how often they moved and a busy
+    strategy looks calm: June's -$730 reported as -3.0% while the funded book was
+    down -7.3%. The headline is therefore P&L over the capital the book requires.
+
+    Turnover keeps a second line — it says something real about how hard that
+    capital worked — but it is labelled as turnover, not as a return.
+
+    `book_size` is the capital set aside (slots x cash per slot), not the peak
+    actually deployed; a run that never fills every slot is measured against
+    money it did not use, which understates it. That is the conservative
+    direction, and it is the sum you would have to fund.
+    """
+    lines = [
+        f'{prefix}{_pnl_emoji(combined_pnl)} סה"כ / Total: ${combined_pnl:+.0f} '
+        f"→ {combined_pnl / book_size * 100:+.1f}% על ההון / on capital (${book_size:.0f})"
+    ]
+    if turnover > 0:
+        count = f" ב-{positions} פוזיציות / in {positions} positions" if positions else ""
+        lines.append(
+            f"{prefix}   ↳ מחזור / turnover: ${turnover:.0f}{count} "
+            f"({combined_pnl / turnover * 100:+.1f}% מהמחזור — לא תשואה / "
+            f"of turnover, not a return)"
+        )
+    return lines
+
+
 def compose_trade_notice(buys: list[dict], sells: list[dict], date: str,
                          open_rows: list[dict] = None, total_cost: float = 0,
                          total_value: float = 0, realized_pnl: float = 0,
-                         total_invested_all: float = 0) -> str:
+                         total_invested_all: float = 0, book_size: float = 0,
+                         positions_opened: int = 0) -> str:
     """Notification sent whenever the bot buys or sells mid-month, with reasons."""
     lines = [f"🔁 פעולת מסחר בסימולציה / Simulation trade — {date}"]
     if sells:
@@ -277,16 +312,13 @@ def compose_trade_notice(buys: list[dict], sells: list[dict], date: str,
             lines += _portfolio_block(open_rows, total_cost, total_value)
         else:
             lines.append("   אין פוזיציות פתוחות. (No open positions.)")
-        if total_invested_all > 0:
-            combined_pct = (combined_pnl / total_invested_all) * 100
+        if book_size > 0:
             if realized_pnl != 0:
                 lines.append(
                     f"   רווח/הפסד ממכירות שבוצעו: {_pnl_emoji(realized_pnl)} ${realized_pnl:+.0f}"
                 )
-            lines.append(
-                f"   {_pnl_emoji(combined_pnl)} סה\"כ / Total: "
-                f"${combined_pnl:+.0f} ({combined_pct:+.1f}%)"
-            )
+            lines += _bottom_line(combined_pnl, book_size, total_invested_all,
+                                  positions_opened)
     lines.append("\nℹ️ סימולציה בלבד. (Simulation only — not investment advice.)")
     return "\n".join(lines)
 
@@ -310,7 +342,8 @@ def _portfolio_block(rows: list[dict], total_cost: float, total_value: float) ->
 
 def compose_update(open_rows: list[dict], total_cost: float, total_value: float,
                    realized_pnl: float, closed_count: int, date: str,
-                   day_n: int, total_days: int, total_invested_all: float = None) -> str:
+                   day_n: int, total_days: int, total_invested_all: float = None,
+                   book_size: float = 0) -> str:
     """Periodic (every-3-days) status update."""
     lines = [
         f"📲 עדכון סימולציה / Simulation update — {date}",
@@ -326,9 +359,8 @@ def compose_update(open_rows: list[dict], total_cost: float, total_value: float,
     combined_pnl = unrealized_pnl + realized_pnl
     lines.append("")
     lines.append("💼 סיכום תיק / Portfolio summary:")
-    if total_invested_all and total_invested_all > 0:
-        combined_pct = (combined_pnl / total_invested_all) * 100
-        lines.append(f"   הושקע סה\"כ / Total invested: ${total_invested_all:.0f}")
+    if book_size > 0:
+        lines.append(f"   גודל התיק / Book size: ${book_size:.0f}")
         if closed_count:
             lines.append(
                 f"   רווח/הפסד ממכירות שבוצעו / Closed trades P&L: "
@@ -340,10 +372,8 @@ def compose_update(open_rows: list[dict], total_cost: float, total_value: float,
                 f"   רווח/הפסד על פוזיציות פתוחות (על הנייר) / Open positions P&L (on paper): "
                 f"{_pnl_emoji(unrealized_pnl)} ${unrealized_pnl:+.0f}"
             )
-        lines.append(
-            f"   {_pnl_emoji(combined_pnl)} סה\"כ / Total: "
-            f"${combined_pnl:+.0f} ({combined_pct:+.1f}%)"
-        )
+        lines += _bottom_line(combined_pnl, book_size, total_invested_all or 0.0,
+                              closed_count + len(open_rows))
     elif closed_count:
         lines.append(
             f"   רווח/הפסד ממכירות שבוצעו / Closed trades P&L: "
@@ -357,10 +387,14 @@ def compose_update(open_rows: list[dict], total_cost: float, total_value: float,
 
 def compose_summary(closed: list[dict], open_rows: list[dict], start_date: str,
                     end_date: str, total_invested: float, total_final: float,
-                    realized_pnl: float) -> str:
-    """End-of-month summary: every trade, the reasons, and the bottom line."""
+                    realized_pnl: float, book_size: float = 0) -> str:
+    """End-of-month summary: every trade, the reasons, and the bottom line.
+
+    `total_invested` is turnover — every dollar that passed through a slot — so
+    it is reported as turnover and the headline is taken on `book_size`. See
+    _bottom_line for why.
+    """
     total_pnl = total_final - total_invested
-    total_pct = (total_final / total_invested - 1) * 100 if total_invested else 0.0
     lines = [
         "🏁 סיכום סימולציית החודש / Monthly Simulation — SUMMARY",
         f"📅 {start_date} → {end_date}\n",
@@ -393,10 +427,18 @@ def compose_summary(closed: list[dict], open_rows: list[dict], start_date: str,
     )
     lines.append("📈 שורה תחתונה / Bottom line:")
     lines.append(win_line)
-    lines.append(
-        f"💵 הושקע / Invested: ${total_invested:.0f}  →  שווי סופי / Final: ${total_final:.0f}"
-    )
-    lines.append(f"{_pnl_emoji(total_pct)} סה\"כ / TOTAL: {total_pct:+.1f}% (${total_pnl:+.0f})")
+    if book_size > 0:
+        lines.append(
+            f"💵 הון / Capital: ${book_size:.0f}  →  "
+            f"שווי סופי / Final: ${book_size + total_pnl:.0f}"
+        )
+        lines += _bottom_line(total_pnl, book_size, total_invested, n_trades, prefix="")
+    else:
+        total_pct = (total_final / total_invested - 1) * 100 if total_invested else 0.0
+        lines.append(
+            f"💵 הושקע / Invested: ${total_invested:.0f}  →  שווי סופי / Final: ${total_final:.0f}"
+        )
+        lines.append(f"{_pnl_emoji(total_pct)} סה\"כ / TOTAL: {total_pct:+.1f}% (${total_pnl:+.0f})")
     lines.append(
         "\nℹ️ זו הייתה סימולציה חד-פעמית עם כסף מדומה. אפשר להריץ שוב חודש הבא.\n"
         "(One-time paper-money simulation. Run it again next month if you like — "

@@ -263,6 +263,16 @@ def initialize(today: date, regime: str, prices_map: dict, cfg, state_path: str)
     return state
 
 
+def book_size(state: dict) -> float:
+    """Capital the book ties up: slots x cash per slot.
+
+    Read from the run's own state rather than from config, so changing
+    SIM_CASH_PER_STOCK or SIM_MAX_POSITIONS mid-run cannot retroactively rescale
+    the percentage already reported for that run.
+    """
+    return float(state.get("cash_per_stock", 0.0)) * int(state.get("max_positions", 0))
+
+
 def run(today: date = None, cfg=config, state_path: str = None) -> dict:
     """Single daily step of the simulation. Returns the updated state."""
     today = today or _today()
@@ -347,6 +357,8 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
             buys, sells, today.isoformat(),
             open_rows=open_rows, total_cost=total_cost, total_value=total_value,
             realized_pnl=realized_pnl, total_invested_all=total_invested_all,
+            book_size=book_size(state),
+            positions_opened=len(state["closed"]) + len(state["positions"]),
         ))
 
     if is_final:
@@ -365,6 +377,7 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
         _send(telegram.compose_summary(
             state["closed"], open_rows, state["start_date"], state["end_date"],
             total_invested, total_final, realized_pnl,
+            book_size=book_size(state),
         ))
         state["positions"] = []
         state["status"] = "DONE"
@@ -381,7 +394,7 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
         _send(telegram.compose_update(
             open_rows, total_cost, total_value, realized_pnl,
             len(state["closed"]), today.isoformat(), day_n, total_days,
-            total_invested_all=total_invested_all,
+            total_invested_all=total_invested_all, book_size=book_size(state),
         ))
         state["updates_sent"].extend(m.isoformat() for m in due)
 

@@ -194,8 +194,15 @@ The summary reports two different returns, because they are easy to confuse:
 (`SIM_CASH_PER_STOCK` x `SIM_MAX_POSITIONS` = $10,000) and is the figure to
 compare against a buy-and-hold benchmark; **return on turnover** is P&L over the
 sum of every position's cost basis, so a book that recycles the same $10,000
-through 26 trades reports $26,000 "invested" and a correspondingly smaller
-percentage. The live Telegram summary prints the turnover figure.
+through 24 trades reports $24,000 of turnover and a correspondingly smaller
+percentage.
+
+Capital is the headline everywhere, Telegram included. Turnover is printed
+beneath it, labelled as turnover, because it says how hard the capital worked —
+but it is not a return: its denominator grows every time the bot trades again,
+so the same dollars read differently depending only on how often they moved. The
+June 2026 run ended -$730 on a $10,000 book. Reported on turnover that was
+-3.0%; on capital it is -7.3%.
 
 **`src/whatif.py` — value a past book at a later date, as if nothing was sold.**
 
