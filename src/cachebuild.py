@@ -191,7 +191,7 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
         if old_frame is not None and len(arrays["close"]) < len(old_frame):
             truncated.append(f"{ticker} {len(old_frame)}->{len(arrays['close'])}")
     if truncated and check_only:
-        summary["would_refuse"] = (
+        summary.setdefault("would_refuse", []).append(
             f"{len(truncated)} ticker(s) would lose bars: {', '.join(sorted(truncated)[:6])}")
     elif truncated:
         raise ValueError(
@@ -204,7 +204,7 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
 
     left_behind = sorted((cached - set(encoded)) | (set(summary["skipped"]) & cached))
     if left_behind and shifts_the_tail and check_only:
-        summary["would_refuse"] = (
+        summary.setdefault("would_refuse", []).append(
             f"{len(left_behind)} cached ticker(s) would be left behind by a longer "
             f"calendar: {', '.join(left_behind[:6])}")
     elif left_behind and shifts_the_tail:
@@ -247,14 +247,19 @@ def main() -> None:
     verb = "would cover" if args.check else "cached"
     print(f"{verb} {summary['sessions']} sessions, "
           f"{summary['first']} .. {summary['last']}")
+    if summary["skipped"]:
+        verb = "would be skipped" if args.check else "skipped"
+        print(f"{len(summary['skipped'])} {verb} for gaps in the feed: "
+              + ", ".join(sorted(summary["skipped"])))
+    # A check that stays quiet about what the real run would refuse on is not a
+    # check — the user would find out by running it for real.
+    for reason in summary.get("would_refuse", []):
+        print(f"WOULD REFUSE: {reason}")
     if not args.check:
         short = {t: n for t, n in summary["tickers"].items()
                  if n < summary["sessions"]}
         print(f"{len(summary['tickers'])} tickers written"
               + (f"; {len(short)} with a shorter history than the calendar" if short else ""))
-        if summary["skipped"]:
-            print(f"{len(summary['skipped'])} skipped for gaps in the feed: "
-                  + ", ".join(sorted(summary["skipped"])))
 
 
 if __name__ == "__main__":

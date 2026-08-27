@@ -258,4 +258,4 @@ def test_check_only_reports_a_refusal_instead_of_raising(tmp_path, monkeypatch):
     monkeypatch.setattr("src.data.fetch_prices", lambda *a, **k: fetched)
 
     summary = cachebuild.build(["AAA"], check_only=True, cache_dir=str(cache))
-    assert "would lose bars" in summary["would_refuse"]
+    assert any("would lose bars" in r for r in summary["would_refuse"])

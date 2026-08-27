@@ -223,8 +223,9 @@ def _report() -> None:
     print("=" * 68)
     print("2. Paired bootstrap of the difference (resampling whole windows)")
     print("=" * 68)
+    boots: dict[str, dict] = {}
     for label, wins in [w for w in (("overlapping", over), ("non-overlapping", apart)) if w[1]]:
-        b = bootstrap(ADOPTED, BEFORE, wins)
+        b = boots[label] = bootstrap(ADOPTED, BEFORE, wins)
         print(f"  {label:16} n={b['n_windows']:2d}  "
               f"mean {b['observed_mean_delta']:+5.2f}pp  "
               f"95% CI [{b['ci_low']:+5.2f}, {b['ci_high']:+5.2f}]  "
@@ -264,8 +265,11 @@ def _report() -> None:
     print("\n" + "=" * 68)
     print("Verdict")
     print("=" * 68)
-    b_over = bootstrap(ADOPTED, BEFORE, over)
-    b_apart = bootstrap(ADOPTED, BEFORE, apart) if apart else None
+    # Reuse section 2's bootstraps: each one replays every window under both
+    # settings, and re-running them here doubled the report's runtime for
+    # numbers that were identical by construction.
+    b_over = boots["overlapping"]
+    b_apart = boots.get("non-overlapping")
 
     # Every sentence below is derived from the numbers printed above it. An
     # earlier version stated its conclusions as fixed text, which stayed on the
