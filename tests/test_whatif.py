@@ -91,3 +91,29 @@ def test_a_position_with_no_cached_prices_is_reported_not_dropped(tmp_path):
     assert [r["ticker"] for r in out["rows"]] == ["AAA"]
     assert out["unpriced"] == ["ZZZ"]
     assert out["total_cost"] == 1000.0        # and the total says so, via unpriced
+
+
+def test_a_row_without_a_cost_basis_uses_the_runs_slot_size_not_live_config(tmp_path):
+    """Month-end rows written before cost_basis was recorded must not be rescaled."""
+    import json
+    import types
+    import src.pricecache as pricecache
+    import src.whatif as whatif
+
+    cache = tmp_path
+    (cache / "_dates.json").write_text(json.dumps(["2026-01-05", "2026-01-06"]))
+    (cache / "AAA.json").write_text(json.dumps(
+        {"open": [10.0, 11.0], "high": [10.0, 11.0], "low": [10.0, 11.0],
+         "close": [10.0, 11.0], "volume": [1, 1]}))
+    pricecache.clear_cache()
+
+    state = {"cash_per_stock": 1000.0, "positions": [], "closed": [
+        {"ticker": "AAA", "entry_price": 10.0, "entry_date": "2026-01-05",
+         "exit_date": "2026-01-06", "shares": 100.0},      # no cost_basis
+    ]}
+    cfg = types.SimpleNamespace(SIM_CASH_PER_STOCK=2000.0)  # raised since that run
+
+    out = whatif.hold_forward(state, date(2026, 1, 5), date(2026, 1, 6),
+                              cfg=cfg, cache_dir=str(cache))
+    assert out["total_cost"] == 1000.0
+    assert out["rows"][0]["pnl"] == 100.0                   # 100 sh x $11 - $1000

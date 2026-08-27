@@ -378,10 +378,13 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
                 "ticker": pos["ticker"], "name": pos["name"],
                 "entry_price": pos["entry_price"], "entry_date": pos["entry_date"],
                 "exit_price": row["current_price"], "exit_date": today.isoformat(),
-                "shares": pos["shares"], "pnl": row["pnl"], "pnl_pct": row["pnl_pct"],
+                "shares": pos["shares"], "cost_basis": pos["cost_basis"],
+                "pnl": row["pnl"], "pnl_pct": row["pnl_pct"],
                 "sell_reason": telegram.BOOK_CLOSED,
             })
-        total_invested = sum(c["cost_basis"] if "cost_basis" in c else cash_per_stock
+        # cash_per_stock comes from the run's own state, so a state written
+        # before cost_basis was recorded is still valued at what that run paid.
+        total_invested = sum(c.get("cost_basis", cash_per_stock)
                              for c in state["closed"])
         total_final = total_invested + sum(c["pnl"] for c in state["closed"])
         _send(telegram.compose_summary(

@@ -131,8 +131,16 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
         problems = compare(existing, fresh)
         if problems:
             conflicts[ticker] = problems[:5]
-    if conflicts:
-        detail = "; ".join(f"{t}: {p[0]}" for t, p in list(conflicts.items())[:5])
+    # In check mode a conflict is the finding, not a reason to abort: raising
+    # here suppressed the calendar summary and every other refusal the run had
+    # already worked out, which is the opposite of what --check is for.
+    conflict_detail = "; ".join(f"{t}: {p[0]}" for t, p in list(conflicts.items())[:5])
+    would_refuse: list[str] = []
+    if conflicts and check_only:
+        would_refuse.append(
+            f"{len(conflicts)} ticker(s) contradict the cache ({conflict_detail})")
+    elif conflicts:
+        detail = conflict_detail
         raise ValueError(
             f"fresh data contradicts the cache for {len(conflicts)} ticker(s) "
             f"({detail}). Results already published from this cache would be "
@@ -163,7 +171,8 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
     # has to come after this loop, and no file may be written before it.
     encoded: dict[str, dict] = {}
     summary = {"tickers": {}, "skipped": {}, "sessions": len(calendar),
-               "first": calendar[0], "last": calendar[-1]}
+               "first": calendar[0], "last": calendar[-1],
+               "would_refuse": would_refuse}
     for ticker, fresh in fetched.items():
         arrays, missing = _encode_ticker(fresh, calendar)
         # arrays is None with no missing sessions when the feed returned nothing
@@ -191,7 +200,7 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
         if old_frame is not None and len(arrays["close"]) < len(old_frame):
             truncated.append(f"{ticker} {len(old_frame)}->{len(arrays['close'])}")
     if truncated and check_only:
-        summary.setdefault("would_refuse", []).append(
+        summary["would_refuse"].append(
             f"{len(truncated)} ticker(s) would lose bars: {', '.join(sorted(truncated)[:6])}")
     elif truncated:
         raise ValueError(
@@ -204,7 +213,7 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
 
     left_behind = sorted((cached - set(encoded)) | (set(summary["skipped"]) & cached))
     if left_behind and shifts_the_tail and check_only:
-        summary.setdefault("would_refuse", []).append(
+        summary["would_refuse"].append(
             f"{len(left_behind)} cached ticker(s) would be left behind by a longer "
             f"calendar: {', '.join(left_behind[:6])}")
     elif left_behind and shifts_the_tail:

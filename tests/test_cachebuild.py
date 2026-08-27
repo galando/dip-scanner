@@ -259,3 +259,32 @@ def test_check_only_reports_a_refusal_instead_of_raising(tmp_path, monkeypatch):
 
     summary = cachebuild.build(["AAA"], check_only=True, cache_dir=str(cache))
     assert any("would lose bars" in r for r in summary["would_refuse"])
+
+
+def test_check_only_reports_a_conflict_instead_of_raising(tmp_path, monkeypatch):
+    """A conflict is what --check exists to find, not a reason to abort."""
+    import json
+    import pandas as pd
+    import src.cachebuild as cachebuild
+    import src.pricecache as pricecache
+
+    cache = tmp_path
+    dates = ["2026-01-05", "2026-01-06"]
+    (cache / "_dates.json").write_text(json.dumps(dates))
+    (cache / "AAA.json").write_text(json.dumps(
+        {"open": [10.0, 11.0], "high": [10.0, 11.0], "low": [10.0, 11.0],
+         "close": [10.0, 11.0], "volume": [1, 1]}))
+    pricecache.clear_cache()
+
+    disagrees = [10.0, 99.0]
+    fetched = {"AAA": pd.DataFrame(
+        {"Open": disagrees, "High": disagrees, "Low": disagrees,
+         "Close": disagrees, "Volume": [1, 1]}, index=pd.to_datetime(dates))}
+    monkeypatch.setattr("src.data.fetch_prices", lambda *a, **k: fetched)
+
+    summary = cachebuild.build(["AAA"], check_only=True, cache_dir=str(cache))
+    assert any("contradict the cache" in r for r in summary["would_refuse"])
+    assert summary["sessions"] == 2          # the rest of the report survives
+
+    with pytest.raises(ValueError, match="contradicts the cache"):
+        cachebuild.build(["AAA"], cache_dir=str(cache))

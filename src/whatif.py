@@ -44,6 +44,7 @@ def hold_forward(state: dict, as_of: date, until: date = None, cfg=config,
                  cache_dir: str = pricecache.CACHE_DIR) -> dict:
     """Mark the book open on `as_of` at `until`'s close, as if nothing was sold."""
     until = until or date.fromisoformat(pricecache.load_dates(cache_dir)[-1])
+    slot_size = float(state.get("cash_per_stock", cfg.SIM_CASH_PER_STOCK))
     rows, cost, value = [], 0.0, 0.0
     # A position with no cached prices cannot be valued, and dropping it quietly
     # would leave the basket total reading as the whole book while describing a
@@ -61,7 +62,10 @@ def hold_forward(state: dict, as_of: date, until: date = None, cfg=config,
             continue
         price = float(window["Close"].iloc[-1])
         adj_entry = float(entry_window["Close"].iloc[-1])
-        basis = pos.get("cost_basis", cfg.SIM_CASH_PER_STOCK)
+        # The run's own slot size, not the live config: a row written before
+        # cost_basis was recorded still belongs to the book that paid for it,
+        # and charging it today's SIM_CASH_PER_STOCK would rescale a past result.
+        basis = pos.get("cost_basis", slot_size)
         rows.append({
             "ticker": pos["ticker"],
             "entry_date": pos["entry_date"],
