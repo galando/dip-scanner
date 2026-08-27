@@ -15,11 +15,10 @@ State lives in simulation.json and is committed back by the workflow, so the run
 is stateless between days. Buys use the strict gates (no relaxation); sells use the
 mean-reversion exit. This is a simulation only — never investment advice.
 """
-import calendar
 import json
 import logging
 import os
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import config
 import src.universe as universe
@@ -76,9 +75,14 @@ def _today() -> date:
     return datetime.now(timezone.utc).date()
 
 
-def _month_end(d: date) -> date:
-    last = calendar.monthrange(d.year, d.month)[1]
-    return date(d.year, d.month, last)
+def _sim_end(d: date, cfg=config) -> date:
+    """Last day of the run: a full SIM_DURATION_DAYS month from day 1.
+
+    Earlier versions ended at the calendar month end, which silently shortened
+    any run that did not start on the 1st — the June 2026 simulation began on
+    the 8th and got 22 days instead of 30.
+    """
+    return d + timedelta(days=cfg.SIM_DURATION_DAYS)
 
 
 # --------------------------------------------------------------------------- #
@@ -215,7 +219,7 @@ def _send(message: str) -> None:
 # --------------------------------------------------------------------------- #
 def initialize(today: date, regime: str, prices_map: dict, cfg, state_path: str) -> dict:
     """Day 1: open positions from strict signals and announce them."""
-    start, end = today, _month_end(today)
+    start, end = today, _sim_end(today, cfg)
     candidates = scan_candidates(regime, prices_map, cfg, exclude=set())[:cfg.SIM_MAX_POSITIONS]
 
     positions = []

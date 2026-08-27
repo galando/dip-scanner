@@ -119,8 +119,12 @@ has no edge; believe the numbers, not the design.
 ## Monthly Paper-Trading Simulation
 
 A one-time, fake-money test of the strategy that reports entirely through the
-Telegram bot. It runs for one calendar month and is driven by a daily GitHub
-Action (`Monthly Simulation` workflow) — no always-on server.
+Telegram bot. It runs for a full month — `SIM_DURATION_DAYS` (30) days from
+day one, *not* whatever is left of the calendar month — and is driven by a daily
+GitHub Action (`Monthly Simulation` workflow), so there is no always-on server.
+(The first run, in June 2026, started on the 8th and under the old
+calendar-month-end rule got only 22 days; a mean-reversion strategy needs the
+whole month for the reversion to happen.)
 
 **How it trades:**
 
@@ -153,6 +157,78 @@ only — never investment advice.
 
 ---
 
+## Replaying a Month After the Fact
+
+`src/simulate.py` can only run forward — one step per cron firing, against
+whatever the price feed returns today — so a month takes a month to see. Two
+modules answer questions about a month that has already happened.
+
+**`src/replay.py` — re-run the book day by day over a past window.**
+
+```bash
+PYTHONPATH=. python -m src.replay 2026-07-28              # a full 30-day month
+PYTHONPATH=. python -m src.replay 2026-07-28 2026-08-27   # explicit end date
+```
+
+It prints the exact Telegram messages the bot would have sent, then a summary.
+How it works, and what is and is not faithful:
+
+- **Prices** come from the offline cache in `data/prices/` (see below),
+  truncated to the day being replayed, so no step can see the future.
+- **Exits** are the production rule — `simulate.evaluate_exit`, unchanged.
+- **Buys** come from the scanner's own recorded alert history
+  (`data/alerts.json`, reconstructed from the committed dedup state), because a
+  buy signal needs the whole S&P 500 universe *and* point-in-time fundamentals,
+  and a price cache can reconstruct neither. Every entry is therefore a signal
+  the live bot really did fire, on the day it fired, at that day's close.
+- **The one judgement call** the alert log does not record is ordering: when
+  more names are flagged than there are free slots, the live scanner ranks by
+  composite score. The replay's tie-break is "most oversold first" (lowest RSI),
+  which is strategy-consistent and uses only cached data.
+- An alert stamped on a non-trading day rolls to the next session; one older
+  than `MAX_SIGNAL_AGE_DAYS` (4) is dropped rather than dragged forward.
+
+The summary reports two different returns, because they are easy to confuse:
+**return on capital** is P&L over the money actually at risk
+(`SIM_CASH_PER_STOCK` x `SIM_MAX_POSITIONS` = $10,000) and is the figure to
+compare against a buy-and-hold benchmark; **return on turnover** is P&L over the
+sum of every position's cost basis, so a book that recycles the same $10,000
+through 26 trades reports $26,000 "invested" and a correspondingly smaller
+percentage. The live Telegram summary prints the turnover figure.
+
+**`src/whatif.py` — value a past book at a later date, as if nothing was sold.**
+
+```bash
+PYTHONPATH=. python -m src.whatif 2026-06-29              # value that day's book today
+PYTHONPATH=. python -m src.whatif 2026-06-29 2026-07-15
+```
+
+This is how the exit rules get judged against simply doing nothing. Bars are the
+broker's and carry retroactive corporate-action adjustments, so for a ticker
+that paid a distribution the cached entry-date close sits below the price the
+bot recorded live; the tool reports both the price change against the entry
+actually paid and the total return on the adjusted series.
+
+### The offline price cache
+
+`data/prices/` holds daily OHLCV bars snapshotted from the broker feed:
+
+```
+data/prices/_dates.json   ["2025-05-06", ...]   shared trading-day index
+data/prices/<TICKER>.json {"open": [...], "high": [...], "low": [...],
+                           "close": [...], "volume": [...]}
+```
+
+A ticker's arrays are right-aligned against `_dates.json`, so a series with N
+bars covers the last N dates. `src/pricecache.py` reads them back in the same
+`{ticker: DataFrame}` shape `src.data.fetch_prices` returns, which is why every
+gate and indicator in the project works unchanged on cached data. The cache
+covers the tickers the simulation and the recorded alert stream actually
+touched, not the whole index — a replay reports any signal it could not price
+rather than silently skipping it.
+
+---
+
 ## Threshold Tuning
 
 All thresholds live in `config.py`. Key knobs:
@@ -176,6 +252,7 @@ All thresholds live in `config.py`. Key knobs:
 | `SUPPRESS_IN_RISK_OFF` | False | Skip all alerts when SPY below 200dma |
 | `STABILIZATION_REQUIRED_RISK_OFF` | 2 | Stabilization signals required in RISK_OFF |
 | `EARNINGS_BLACKOUT_DAYS` | 5 | Flag if earnings within N days |
+| `SIM_DURATION_DAYS` | 30 | Simulation run length — a full month from day one |
 
 ---
 
@@ -199,6 +276,14 @@ GitHub Actions (daily cron, after US close)
         +--> telegram.py   : send alerts
 
    backtest.py (on demand): replay the gates historically, measure the edge
+
+   replay.py   (on demand): re-run a past month day by day
+        |
+        +--> pricecache.py : offline daily bars (data/prices/), as-of truncation
+        +--> data/alerts.json : the scanner's own recorded alert history
+        +--> simulate.py   : the production exit rule, unchanged
+
+   whatif.py   (on demand): value a past book later, as if nothing was sold
 ```
 
 No always-on server. Zero cost. Everything runs inside the Action and exits.

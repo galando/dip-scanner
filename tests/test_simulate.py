@@ -60,7 +60,7 @@ def test_initialize_buys_passing_stock(mock_universe, mock_regime_data, mock_dat
 
     assert state["status"] == "RUNNING"
     assert state["start_date"] == "2026-06-06"
-    assert state["end_date"] == "2026-06-30"
+    assert state["end_date"] == "2026-07-06"  # a full 30-day month, not the calendar end
     assert len(state["positions"]) == 1
     pos = state["positions"][0]
     assert pos["ticker"] == "NFLX"
@@ -152,7 +152,7 @@ def test_final_day_closes_and_marks_done(mock_universe, mock_regime_data, mock_d
     sp = str(tmp_path / "s.json")
 
     simulate.run(today=date(2026, 6, 6), state_path=sp)             # init
-    state = simulate.run(today=date(2026, 6, 30), state_path=sp)    # month end
+    state = simulate.run(today=date(2026, 7, 6), state_path=sp)     # month end
 
     assert state["status"] == "DONE"
     assert state["positions"] == []
@@ -171,9 +171,9 @@ def test_done_state_is_noop(mock_universe, mock_regime_data, mock_data, _env, tm
     sp = str(tmp_path / "s.json")
 
     simulate.run(today=date(2026, 6, 6), state_path=sp)
-    simulate.run(today=date(2026, 6, 30), state_path=sp)
+    simulate.run(today=date(2026, 7, 6), state_path=sp)
     before = simulate.load_sim(sp)
-    after = simulate.run(today=date(2026, 7, 1), state_path=sp)
+    after = simulate.run(today=date(2026, 7, 7), state_path=sp)
     assert after["status"] == "DONE"
     assert after["closed"] == before["closed"]
 
@@ -203,3 +203,14 @@ def test_compose_summary_bottom_line():
                "pnl_pct": 15.0, "pnl": 150.0, "sell_reason": "target hit"}]
     msg = t.compose_summary(closed, [], "2026-06-06", "2026-06-30", 1000.0, 1150.0, 150.0)
     assert "NFLX" in msg and "TOTAL" in msg and "+15.0%" in msg
+
+
+def test_sim_end_is_a_full_month_from_day_one():
+    """A run started mid-month gets the whole SIM_DURATION_DAYS, not the remainder.
+
+    The June 2026 simulation began on the 8th and, under the old calendar-month-end
+    rule, had 22 days to work with. A mean-reversion strategy needs the full month.
+    """
+    assert simulate._sim_end(date(2026, 6, 8)) == date(2026, 7, 8)
+    assert simulate._sim_end(date(2026, 6, 1)) == date(2026, 7, 1)
+    assert (simulate._sim_end(date(2026, 2, 10)) - date(2026, 2, 10)).days == config.SIM_DURATION_DAYS

@@ -68,6 +68,12 @@ BACKTEST_MAE_WINDOW = 63        # Window for max-adverse-excursion after entry
 # A one-month, fake-money test of the strategy. Buys are the SAME strict
 # four-gate signals the scanner alerts on; sells are the mean-reversion exit.
 SIM_STATE_PATH = "simulation.json"   # Persisted portfolio + history
+SIM_DURATION_DAYS = 30               # Run length: a FULL month from day 1, not
+                                     # "whatever is left of the calendar month".
+                                     # The June 2026 run started on the 8th and
+                                     # had only 22 days to work with; a dip
+                                     # strategy needs the whole month to let the
+                                     # mean reversion play out.
 SIM_CASH_PER_STOCK = 1000.0          # Notional $ allocated per position
 SIM_MAX_POSITIONS = 10               # Max concurrent open positions
 SIM_UPDATE_INTERVAL_DAYS = 3         # Send a status update every N days
