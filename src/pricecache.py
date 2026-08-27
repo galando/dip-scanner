@@ -23,6 +23,7 @@ corporate-action adjustments retroactively — see README for the one ticker
 import json
 import os
 from datetime import date
+from functools import lru_cache
 
 import pandas as pd
 
@@ -37,13 +38,31 @@ def available_tickers(cache_dir: str = CACHE_DIR) -> list[str]:
     )
 
 
+@lru_cache(maxsize=8)
 def load_dates(cache_dir: str = CACHE_DIR) -> list[str]:
+    return _read_dates(cache_dir)
+
+
+def _read_dates(cache_dir: str) -> list[str]:
     with open(os.path.join(cache_dir, _DATES_FILE)) as f:
         return json.load(f)
 
 
+def clear_cache() -> None:
+    """Drop the in-memory frames — call after the files on disk change."""
+    load_dates.cache_clear()
+    load_frame.cache_clear()
+
+
+@lru_cache(maxsize=1024)
 def load_frame(ticker: str, cache_dir: str = CACHE_DIR) -> pd.DataFrame | None:
-    """One ticker's full cached history as an OHLCV frame indexed by date."""
+    """One ticker's full cached history as an OHLCV frame indexed by date.
+
+    Memoized: a parameter sweep replays the same month hundreds of times, and
+    re-reading and re-parsing every ticker each pass dominates the runtime.
+    Callers only ever slice the frame (which copies), so sharing one instance is
+    safe. Call clear_cache() if the files on disk change.
+    """
     path = os.path.join(cache_dir, f"{ticker}.json")
     if not os.path.exists(path):
         return None

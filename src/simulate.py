@@ -149,10 +149,17 @@ def evaluate_exit(pos: dict, prices_df, cfg) -> tuple[bool, str, float]:
         return True, (f"יעד רווח: עלתה {pnl_pct:+.1f}% מהקנייה / target hit, "
                       f"up {pnl_pct:+.1f}% from entry"), current_price
 
-    # 3) Bounce complete — RSI back to normal while in profit.
+    # 3) Bounce complete — RSI back to normal while in profit, but not before the
+    # position has had SIM_MIN_HOLD_SESSIONS to work. RSI recovers within a day or
+    # two of a bounce while the mean reversion itself takes weeks, so without a
+    # floor this rule sells the whole book for one or two percent almost
+    # immediately. The floor applies only here: the stop-loss and thesis-break
+    # rules are risk controls and must stay able to fire on day one.
+    sessions_held = int((prices_df.index > pos["entry_date"]).sum())
     rsi = compute_rsi(prices_df)
     current_rsi = float(rsi.iloc[-1]) if len(rsi.dropna()) else 50.0
-    if current_rsi >= cfg.SIM_RSI_EXIT and pnl_pct > 0:
+    if (current_rsi >= cfg.SIM_RSI_EXIT and pnl_pct > 0
+            and sessions_held >= cfg.SIM_MIN_HOLD_SESSIONS):
         return True, (f"ההתאוששות הושלמה: RSI חזר ל-{current_rsi:.0f} ({pnl_pct:+.1f}%) / "
                       f"bounce done, RSI back to {current_rsi:.0f} ({pnl_pct:+.1f}%)"), current_price
 

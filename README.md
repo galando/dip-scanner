@@ -229,6 +229,56 @@ rather than silently skipping it.
 
 ---
 
+## Tuning the Exit Rules
+
+`src/tune.py` turns the replay into a measuring instrument. It answers two
+separate questions, and the order matters.
+
+**1. What does a signal do on its own?** `hold_curve` takes every alert in the
+windows, buys at that day's close, and holds for exactly N sessions with no exit
+rule at all:
+
+```bash
+PYTHONPATH=. python -m src.tune curve
+```
+
+If the curve is still climbing at N days, any exit that fires before N is
+leaving money behind. This is the honest starting point, because it is measured
+before any parameter is chosen. By default it keeps only signals with data out
+to the longest horizon, so every row describes the same set of trades — without
+that, late signals drop out of the long horizons and part of the curve is a
+changing sample rather than a changing holding period.
+
+**2. What would the book have returned under a given set of thresholds?**
+`sweep` replays every window under each combination in a grid:
+
+```bash
+PYTHONPATH=. python -m src.tune sweep
+```
+
+`with_overrides` builds a stand-in for the config module, so the production exit
+code runs unmodified against substituted thresholds.
+
+### Reading the results honestly
+
+A grid search over two months will find a winner by construction — there are
+hundreds of combinations and about fifty trades. Three guards, none sufficient:
+
+- `sweep` reports **every window separately**, never only the average, and ranks
+  on the *worst* window's excess return over SPY rather than the mean.
+- `pick` keeps only settings that beat the current configuration in **every**
+  window, which throws away the combinations that win big in one month and lose
+  in the other.
+- The hold curve is computed **independently of the grid**, so agreement between
+  the two is weak evidence rather than the same fit counted twice.
+
+Treat any result here as a hypothesis to check against more history — the
+five-year `src/backtest.py` replay is the right next test — not as a settled
+answer. More cached months make all of this stronger; the cache is the binding
+constraint, not the code.
+
+---
+
 ## Threshold Tuning
 
 All thresholds live in `config.py`. Key knobs:
@@ -253,6 +303,7 @@ All thresholds live in `config.py`. Key knobs:
 | `STABILIZATION_REQUIRED_RISK_OFF` | 2 | Stabilization signals required in RISK_OFF |
 | `EARNINGS_BLACKOUT_DAYS` | 5 | Flag if earnings within N days |
 | `SIM_DURATION_DAYS` | 30 | Simulation run length — a full month from day one |
+| `SIM_MIN_HOLD_SESSIONS` | see config | Sessions before the bounce-done exit may fire |
 
 ---
 
