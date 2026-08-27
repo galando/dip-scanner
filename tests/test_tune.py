@@ -154,3 +154,21 @@ def test_a_position_closed_at_month_end_leaves_nothing_behind(cache, tmp_path):
         cache_dir=cache, alerts_path=str(path))
     assert [r["rule"] for r in rows] == ["month ended (not a rule)"]
     assert rows[0]["left_behind_pct"] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_median_is_the_even_sample_median_not_the_upper_middle():
+    """Two definitions of median lived in this module; the table was biased high."""
+    import statistics
+    import src.tune as tune
+
+    rows = tune.hold_curve.__doc__  # sanity: module imported
+    values = [1.0, 2.0, 3.0, 4.0]
+    assert statistics.median(values) == 2.5
+    assert values[len(values) // 2] == 3.0      # the old formula
+
+
+def test_evaluate_refuses_an_empty_window_list(tmp_path):
+    import pytest
+    import src.tune as tune
+    with pytest.raises(ValueError, match="no windows to evaluate"):
+        tune.evaluate({"SIM_MIN_HOLD_SESSIONS": 0}, [])

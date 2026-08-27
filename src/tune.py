@@ -14,6 +14,7 @@ instead of only the average, and why `pick` prefers settings that hold up on all
 of them over settings that win on one.
 """
 import itertools
+import statistics
 import types
 from datetime import date
 
@@ -117,7 +118,10 @@ def hold_curve(windows: list[tuple[date, date]], horizons: range = range(1, 22),
             "dropped": offered - len(entries),
             "span": span,
             "mean_pct": sum(returns) / len(returns),
-            "median_pct": returns[len(returns) // 2],
+            # statistics.median, not returns[n // 2]: for an even sample the
+            # latter takes the upper of the two middle values, which biased every
+            # median in this table high and disagreed with knob_table below.
+            "median_pct": statistics.median(returns),
             "win_rate_pct": sum(1 for r in returns if r > 0) / len(returns) * 100.0,
         })
     return rows
@@ -130,6 +134,11 @@ def evaluate(settings: dict, windows: list[tuple[date, date]],
              cache_dir: str = pricecache.CACHE_DIR,
              alerts_path: str = replay.ALERTS_PATH) -> dict:
     """Replay every window under one settings dict."""
+    if not windows:
+        raise ValueError(
+            "no windows to evaluate — the cache and the alert log overlap by "
+            "less than one window. Deepen the cache, or shorten the window."
+        )
     cfg = with_overrides(**settings)
     per_window = []
     for start, end in windows:
@@ -401,10 +410,7 @@ def knob_table(windows, adopted: dict | None = None,
             continue
         settings = {"SIM_MIN_HOLD_SESSIONS": 0, **override}
         r = evaluate(settings, windows, cache_dir, alerts_path)
-        returns = sorted(w["return_pct"] for w in r["windows"])
-        mid = len(returns) // 2
-        median = (returns[mid] if len(returns) % 2
-                  else (returns[mid - 1] + returns[mid]) / 2)
+        median = statistics.median(w["return_pct"] for w in r["windows"])
         benchmarked = [w for w in r["windows"] if w["benchmark_pct"] is not None]
         rows.append({
             "label": label,

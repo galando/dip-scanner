@@ -190,7 +190,10 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
         old_frame = pricecache.load_frame(ticker, cache_dir)
         if old_frame is not None and len(arrays["close"]) < len(old_frame):
             truncated.append(f"{ticker} {len(old_frame)}->{len(arrays['close'])}")
-    if truncated:
+    if truncated and check_only:
+        summary["would_refuse"] = (
+            f"{len(truncated)} ticker(s) would lose bars: {', '.join(sorted(truncated)[:6])}")
+    elif truncated:
         raise ValueError(
             f"this fetch returns fewer bars than the cache already holds for "
             f"{len(truncated)} ticker(s) ({', '.join(sorted(truncated)[:6])}"
@@ -200,7 +203,11 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
         )
 
     left_behind = sorted((cached - set(encoded)) | (set(summary["skipped"]) & cached))
-    if left_behind and shifts_the_tail:
+    if left_behind and shifts_the_tail and check_only:
+        summary["would_refuse"] = (
+            f"{len(left_behind)} cached ticker(s) would be left behind by a longer "
+            f"calendar: {', '.join(left_behind[:6])}")
+    elif left_behind and shifts_the_tail:
         raise ValueError(
             f"this fetch adds sessions at the end of the calendar, which re-dates "
             f"every cached series it does not rewrite ({len(left_behind)} would be "

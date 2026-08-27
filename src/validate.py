@@ -124,6 +124,8 @@ def bootstrap(settings: dict, baseline: dict, windows: list[tuple[date, date]],
     them on identical months — the pairing removes the variation between months,
     which is much larger than the effect being measured.
     """
+    if not windows:
+        raise ValueError("no windows to bootstrap over")
     a = tune.evaluate(settings, windows, cache_dir, alerts_path)
     b = tune.evaluate(baseline, windows, cache_dir, alerts_path)
     deltas = [x["return_pct"] - y["return_pct"]
@@ -199,10 +201,20 @@ def _report() -> None:
     print(f"{len(over)} overlapping windows vs {len(apart)} that share no sessions.")
     print("The second number is the honest sample size.\n")
 
+    # The short-cache case is what this module exists to report on, so it says so
+    # rather than dividing by zero somewhere inside the first section.
+    if not over:
+        print("Nothing to validate: the cache and the alert log overlap by less")
+        print("than one 30-day window. Deepen the cache and re-run:")
+        print("    PYTHONPATH=. python -m src.cachebuild --period 5y")
+        return
+
     print("=" * 68)
     print("1. The adopted change on windows that share no sessions")
     print("=" * 68)
-    for label, settings in (("before", BEFORE), ("after ", ADOPTED)):
+    if not apart:
+        print("  None available: the span holds no two windows that share no sessions.")
+    for label, settings in ((("before", BEFORE), ("after ", ADOPTED)) if apart else ()):
         r = tune.evaluate(settings, apart)
         per = "  ".join(f"{w['return_pct']:+6.2f}%" for w in r["windows"])
         print(f"  {label}: {per}    mean {r['mean_pct']:+6.2f}%  worst {r['worst_pct']:+6.2f}%")
@@ -211,7 +223,7 @@ def _report() -> None:
     print("=" * 68)
     print("2. Paired bootstrap of the difference (resampling whole windows)")
     print("=" * 68)
-    for label, wins in (("overlapping", over), ("non-overlapping", apart)):
+    for label, wins in [w for w in (("overlapping", over), ("non-overlapping", apart)) if w[1]]:
         b = bootstrap(ADOPTED, BEFORE, wins)
         print(f"  {label:16} n={b['n_windows']:2d}  "
               f"mean {b['observed_mean_delta']:+5.2f}pp  "
@@ -253,18 +265,22 @@ def _report() -> None:
     print("Verdict")
     print("=" * 68)
     b_over = bootstrap(ADOPTED, BEFORE, over)
-    b_apart = bootstrap(ADOPTED, BEFORE, apart)
+    b_apart = bootstrap(ADOPTED, BEFORE, apart) if apart else None
 
     # Every sentence below is derived from the numbers printed above it. An
     # earlier version stated its conclusions as fixed text, which stayed on the
     # page unchanged after a bug fix moved the very numbers beside it.
     print(f"  {direction_phrase(b_over['windows_improved'], b_over['windows_worsened'], b_over['n_windows'])}")
 
-    spans_zero = b_apart["ci_low"] <= 0 <= b_apart["ci_high"]
-    size = "not established" if spans_zero else "measurable on this sample"
-    print(f"  Size is {size}: on the {b_apart['n_windows']} windows that share no")
-    print(f"  sessions the 95% interval is [{b_apart['ci_low']:+.2f}, {b_apart['ci_high']:+.2f}] pp — it "
-          f"{'includes' if spans_zero else 'excludes'} zero.")
+    if b_apart is None:
+        print("  Size is not established: there are no windows here that share no")
+        print("  sessions, so there is no interval to put around the difference.")
+    else:
+        spans_zero = b_apart["ci_low"] <= 0 <= b_apart["ci_high"]
+        size = "not established" if spans_zero else "measurable on this sample"
+        print(f"  Size is {size}: on the {b_apart['n_windows']} windows that share no")
+        print(f"  sessions the 95% interval is [{b_apart['ci_low']:+.2f}, {b_apart['ci_high']:+.2f}] pp — it "
+              f"{'includes' if spans_zero else 'excludes'} zero.")
 
     if wf is None:
         print("  No out-of-sample check: the cache is too short to split without")

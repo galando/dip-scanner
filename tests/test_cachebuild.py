@@ -235,3 +235,27 @@ def test_build_creates_the_cache_directory(tmp_path, monkeypatch):
     assert summary["tickers"] == {"AAA": 2}
     pricecache.clear_cache()
     assert len(pricecache.load_frame("AAA", str(cache))) == 2
+
+
+def test_check_only_reports_a_refusal_instead_of_raising(tmp_path, monkeypatch):
+    """--check is documented as 'compare and write nothing', not 'abort'."""
+    import json
+    import pandas as pd
+    import src.cachebuild as cachebuild
+
+    cache = tmp_path
+    dates = ["2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08"]
+    (cache / "_dates.json").write_text(json.dumps(dates))
+    (cache / "AAA.json").write_text(json.dumps(
+        {"open": [1.0, 2.0, 3.0, 4.0], "high": [1.0, 2.0, 3.0, 4.0],
+         "low": [1.0, 2.0, 3.0, 4.0], "close": [1.0, 2.0, 3.0, 4.0],
+         "volume": [10, 10, 10, 10]}))
+
+    shallow = [3.0, 4.0]
+    fetched = {"AAA": pd.DataFrame(
+        {"Open": shallow, "High": shallow, "Low": shallow, "Close": shallow,
+         "Volume": [10, 10]}, index=pd.to_datetime(dates[2:]))}
+    monkeypatch.setattr("src.data.fetch_prices", lambda *a, **k: fetched)
+
+    summary = cachebuild.build(["AAA"], check_only=True, cache_dir=str(cache))
+    assert "would lose bars" in summary["would_refuse"]
