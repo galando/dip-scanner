@@ -16,7 +16,8 @@ selectivity — the live scanner is stricter than this backtest.
 
 Usage:
     PYTHONPATH=. python -m src.backtest --period 5y --max-tickers 100
-    PYTHONPATH=. python -m src.backtest --send   # also send report via Telegram
+    PYTHONPATH=. python -m src.backtest --offline    # from data/prices, no network
+    PYTHONPATH=. python -m src.backtest --send       # also send report via Telegram
 """
 import argparse
 import logging
@@ -28,6 +29,7 @@ import pandas as pd
 import config
 import src.data as data
 import src.gates as gates
+import src.pricecache as pricecache
 import src.telegram as telegram
 import src.universe as universe
 from src.indicators import compute_sma
@@ -253,14 +255,46 @@ def main() -> None:
                         help="Cap the universe for runtime (0 = all)")
     parser.add_argument("--send", action="store_true",
                         help="Also send the report via Telegram")
+    parser.add_argument("--offline", action="store_true",
+                        help="Read data/prices instead of the live feed")
     args = parser.parse_args()
 
-    tickers = universe.get_sp500_tickers()
-    if args.max_tickers:
-        tickers = tickers[: args.max_tickers]
-
-    logger.info("Backtesting %d tickers over %s", len(tickers), args.period)
-    prices_map = data.fetch_prices(tickers + ["SPY"], period=args.period)
+    if args.offline:
+        tickers = [t for t in pricecache.available_tickers() if t != "SPY"]
+        if args.max_tickers:
+            tickers = tickers[: args.max_tickers]
+        loaded = {t: df for t in tickers + ["SPY"]
+                  if (df := pricecache.load_frame(t)) is not None}
+        # A ticker with fewer than BACKTEST_MIN_HISTORY sessions can never emit a
+        # signal. Counting the deepest one would let a single long series report
+        # a full-universe backtest whose signals came from a handful of tickers.
+        deep = {t: df for t, df in loaded.items()
+                if len(df) > config.BACKTEST_MIN_HISTORY}
+        shallow = sorted(set(loaded) - set(deep) - {"SPY"})
+        if not deep or (len(deep) == 1 and "SPY" in deep):
+            deepest = max((len(df) for df in loaded.values()), default=0)
+            raise SystemExit(
+                f"no cached ticker has more than BACKTEST_MIN_HISTORY "
+                f"({config.BACKTEST_MIN_HISTORY}) sessions — the deepest holds "
+                f"{deepest}, so not one signal can be emitted. Deepen the cache:\n"
+                f"    PYTHONPATH=. python -m src.cachebuild --period 5y"
+            )
+        if shallow:
+            logger.warning(
+                "%d of %d cached tickers are too shallow to emit signals and are "
+                "excluded: %s", len(shallow), len(tickers),
+                ", ".join(shallow[:8]) + ("..." if len(shallow) > 8 else ""))
+        prices_map = deep
+        tickers = [t for t in deep if t != "SPY"]
+        depth = min(len(df) for df in deep.values())
+        args.period = f"cache ({depth}+ sessions, {len(tickers)} tickers)"
+        logger.info("Backtesting %d cached tickers over %s", len(tickers), args.period)
+    else:
+        tickers = universe.get_sp500_tickers()
+        if args.max_tickers:
+            tickers = tickers[: args.max_tickers]
+        logger.info("Backtesting %d tickers over %s", len(tickers), args.period)
+        prices_map = data.fetch_prices(tickers + ["SPY"], period=args.period)
     spy_df = prices_map.get("SPY")
 
     results = run_backtest(prices_map, spy_df, config)

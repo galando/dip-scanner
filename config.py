@@ -68,10 +68,33 @@ BACKTEST_MAE_WINDOW = 63        # Window for max-adverse-excursion after entry
 # A one-month, fake-money test of the strategy. Buys are the SAME strict
 # four-gate signals the scanner alerts on; sells are the mean-reversion exit.
 SIM_STATE_PATH = "simulation.json"   # Persisted portfolio + history
+SIM_DURATION_DAYS = 30               # Run length: a FULL month from day 1, not
+                                     # "whatever is left of the calendar month".
+                                     # The June 2026 run started on the 8th and
+                                     # had only 22 days to work with; a dip
+                                     # strategy needs the whole month to let the
+                                     # mean reversion play out.
 SIM_CASH_PER_STOCK = 1000.0          # Notional $ allocated per position
 SIM_MAX_POSITIONS = 10               # Max concurrent open positions
 SIM_UPDATE_INTERVAL_DAYS = 3         # Send a status update every N days
 SIM_TAKE_PROFIT_PCT = 12.0           # SELL: recovered >= X% from entry (target hit)
 SIM_STOP_LOSS_PCT = 12.0             # SELL: fell >= X% from entry (thesis failed)
 SIM_RSI_EXIT = 60.0                  # SELL: RSI recovered above this (bounce done)
+SIM_MIN_HOLD_SESSIONS = 10           # ...but not before N sessions have passed.
+                                     # RSI recovers a day or two after a bounce,
+                                     # while the mean reversion itself takes
+                                     # weeks: measured over the cached months a
+                                     # signal is worth ~0% after one session and
+                                     # ~+5.6% after 21, so without this floor the
+                                     # bounce-done rule sold the book for one or
+                                     # two percent almost immediately. Across
+                                     # eight rolling 30-day windows this lifts
+                                     # the mean from +4.6% to +5.7% on capital
+                                     # and beats SPY in 7 of 8 instead of 5,
+                                     # while leaving the worst window unchanged.
+                                     # Anything from 5 to 15 measures the same to
+                                     # within a tenth of a point; 10 is the middle
+                                     # of that plateau rather than its argmax, so
+                                     # the choice is not fitted to the noise.
+                                     # See src/tune.py, src/validate.py, README.
 SIM_THESIS_BREAK_MIN_LOSS_PCT = 5.0  # Thesis breaking only triggers if also down >= X% from entry

@@ -8,18 +8,19 @@ What it does, driven by one run per trading day (GitHub Actions cron):
   • Mid-run : every day it re-checks open positions for an exit (take-profit /
               stop-loss / bounce-done / thesis-break) and sells, and fills any free
               slots with fresh dip signals — every buy and sell is announced with a reason.
-              A plain status update goes out every SIM_UPDATE_INTERVAL_DAYS days.
+              The bounce-done exit waits SIM_MIN_HOLD_SESSIONS before it may fire;
+              the two risk controls never wait. A plain status update goes out
+              every SIM_UPDATE_INTERVAL_DAYS days.
   • Month end: closes the book at the last price and sends a full summary.
 
 State lives in simulation.json and is committed back by the workflow, so the run
 is stateless between days. Buys use the strict gates (no relaxation); sells use the
 mean-reversion exit. This is a simulation only — never investment advice.
 """
-import calendar
 import json
 import logging
 import os
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import config
 import src.universe as universe
@@ -76,9 +77,14 @@ def _today() -> date:
     return datetime.now(timezone.utc).date()
 
 
-def _month_end(d: date) -> date:
-    last = calendar.monthrange(d.year, d.month)[1]
-    return date(d.year, d.month, last)
+def _sim_end(d: date, cfg=config) -> date:
+    """Last day of the run: a full SIM_DURATION_DAYS month from day 1.
+
+    Earlier versions ended at the calendar month end, which silently shortened
+    any run that did not start on the 1st — the June 2026 simulation began on
+    the 8th and got 22 days instead of 30.
+    """
+    return d + timedelta(days=cfg.SIM_DURATION_DAYS)
 
 
 # --------------------------------------------------------------------------- #
@@ -145,10 +151,17 @@ def evaluate_exit(pos: dict, prices_df, cfg) -> tuple[bool, str, float]:
         return True, (f"יעד רווח: עלתה {pnl_pct:+.1f}% מהקנייה / target hit, "
                       f"up {pnl_pct:+.1f}% from entry"), current_price
 
-    # 3) Bounce complete — RSI back to normal while in profit.
+    # 3) Bounce complete — RSI back to normal while in profit, but not before the
+    # position has had SIM_MIN_HOLD_SESSIONS to work. RSI recovers within a day or
+    # two of a bounce while the mean reversion itself takes weeks, so without a
+    # floor this rule sells the whole book for one or two percent almost
+    # immediately. The floor applies only here: the stop-loss and thesis-break
+    # rules are risk controls and must stay able to fire on day one.
+    sessions_held = int((prices_df.index > pos["entry_date"]).sum())
     rsi = compute_rsi(prices_df)
     current_rsi = float(rsi.iloc[-1]) if len(rsi.dropna()) else 50.0
-    if current_rsi >= cfg.SIM_RSI_EXIT and pnl_pct > 0:
+    if (current_rsi >= cfg.SIM_RSI_EXIT and pnl_pct > 0
+            and sessions_held >= cfg.SIM_MIN_HOLD_SESSIONS):
         return True, (f"ההתאוששות הושלמה: RSI חזר ל-{current_rsi:.0f} ({pnl_pct:+.1f}%) / "
                       f"bounce done, RSI back to {current_rsi:.0f} ({pnl_pct:+.1f}%)"), current_price
 
@@ -215,7 +228,7 @@ def _send(message: str) -> None:
 # --------------------------------------------------------------------------- #
 def initialize(today: date, regime: str, prices_map: dict, cfg, state_path: str) -> dict:
     """Day 1: open positions from strict signals and announce them."""
-    start, end = today, _month_end(today)
+    start, end = today, _sim_end(today, cfg)
     candidates = scan_candidates(regime, prices_map, cfg, exclude=set())[:cfg.SIM_MAX_POSITIONS]
 
     positions = []

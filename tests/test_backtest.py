@@ -166,3 +166,41 @@ class TestRunBacktestAndReport:
         prices_map = {"BROKEN": broken, "SPY": _make_price_df([400.0] * 300)}
         results = run_backtest(prices_map, prices_map["SPY"], _Cfg)
         assert "with_stabilization" in results
+
+
+class TestOfflineGuard:
+    """--offline must not report a universe-wide backtest built from one ticker."""
+
+    def _cache(self, monkeypatch, depths: dict):
+        import pandas as pd
+        import src.pricecache as pricecache
+
+        def load_frame(ticker, cache_dir=None):
+            n = depths.get(ticker)
+            if n is None:
+                return None
+            idx = pd.bdate_range("2020-01-01", periods=n)
+            closes = [100.0] * n
+            return pd.DataFrame({"Open": closes, "High": closes, "Low": closes,
+                                 "Close": closes, "Volume": [1] * n}, index=idx)
+
+        monkeypatch.setattr(pricecache, "load_frame", load_frame)
+        monkeypatch.setattr(pricecache, "available_tickers",
+                            lambda cache_dir=None: sorted(depths))
+
+    def test_refuses_when_nothing_is_deep_enough(self, monkeypatch):
+        import src.backtest as backtest
+        self._cache(monkeypatch, {"AAA": 100, "BBB": 120, "SPY": 300})
+        monkeypatch.setattr("sys.argv", ["backtest", "--offline"])
+        with pytest.raises(SystemExit, match="not one signal can be emitted"):
+            backtest.main()
+
+    def test_shallow_tickers_are_excluded_not_silently_counted(self, monkeypatch, capsys):
+        import src.backtest as backtest
+        self._cache(monkeypatch, {"DEEP1": 400, "DEEP2": 400,
+                                  "SHALLOW": 50, "SPY": 400})
+        monkeypatch.setattr("sys.argv", ["backtest", "--offline"])
+        backtest.main()
+        report = capsys.readouterr().out
+        # The report names the universe it actually scanned, not everything cached.
+        assert "2 tickers" in report

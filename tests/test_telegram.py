@@ -117,3 +117,24 @@ class TestSendAlert:
         mock_requests.post.return_value = mock_response
         result = send_alert("test_token", "12345", "test message")
         assert result is False
+
+
+def test_why_bought_line_names_its_source_when_gate_details_are_absent():
+    from src.telegram import _why_bought_line as t_line
+    """A replayed entry has no gate output; say so instead of printing 0% / N/A."""
+    line = t_line({"ticker": "ACN", "entry_reason": {}})
+    assert "0%" not in line and "N/A" not in line
+    assert "recorded alert" in line
+
+
+def test_why_bought_line_still_reports_real_gate_details():
+    from src.telegram import _why_bought_line as t_line
+    line = t_line({
+        "ticker": "ACN",
+        "entry_reason": {"drawdown_pct": -31.4, "rsi": 28.6,
+                         "stabilization_signals": ["higher low"], "roe": 42.0},
+    })
+    assert "down 31% from high" in line
+    assert "RSI 29" in line
+    assert "higher low" in line
+    assert "ROE 42%" in line

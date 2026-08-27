@@ -183,8 +183,19 @@ def compose_daily_summary(regime: str, scanned: int, alerted: int,
 # ---------------------------------------------------------------------------
 
 def _why_bought_line(pos: dict) -> str:
-    """One compact bilingual line explaining why a position was opened."""
+    """One compact bilingual line explaining why a position was opened.
+
+    A historical replay (src/replay.py) enters on the scanner's recorded alert
+    rather than on freshly computed gate output, so it has no gate details to
+    show. Printing the numeric defaults there would read as "down 0% from high,
+    RSI N/A", which looks like broken data rather than absent data — so say
+    plainly where the entry came from instead.
+    """
     d = pos.get("entry_reason", {})
+    if not d:
+        return ("   ↳ נכנס לפי התראת הסורק שנרשמה באותו יום (פירוט הסינונים לא נשמר)\n"
+                "     (entered on the scanner's recorded alert for that day — "
+                "gate details not retained)")
     dd = abs(d.get("drawdown_pct", 0) or 0)
     rsi = d.get("rsi", "N/A")
     signals = d.get("stabilization_signals", []) or []

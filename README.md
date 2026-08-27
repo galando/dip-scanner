@@ -119,8 +119,12 @@ has no edge; believe the numbers, not the design.
 ## Monthly Paper-Trading Simulation
 
 A one-time, fake-money test of the strategy that reports entirely through the
-Telegram bot. It runs for one calendar month and is driven by a daily GitHub
-Action (`Monthly Simulation` workflow) — no always-on server.
+Telegram bot. It runs for a full month — `SIM_DURATION_DAYS` (30) days from
+day one, *not* whatever is left of the calendar month — and is driven by a daily
+GitHub Action (`Monthly Simulation` workflow), so there is no always-on server.
+(The first run, in June 2026, started on the 8th and under the old
+calendar-month-end rule got only 22 days; a mean-reversion strategy needs the
+whole month for the reversion to happen.)
 
 **How it trades:**
 
@@ -131,7 +135,8 @@ Action (`Monthly Simulation` workflow) — no always-on server.
 - **Sells** use the mean-reversion exit, checked daily:
   - take-profit: recovered ≥ `SIM_TAKE_PROFIT_PCT` from entry,
   - stop-loss: fell ≥ `SIM_STOP_LOSS_PCT` from entry,
-  - bounce done: RSI back above `SIM_RSI_EXIT` while in profit,
+  - bounce done: RSI back above `SIM_RSI_EXIT` while in profit, but not before
+    `SIM_MIN_HOLD_SESSIONS` have passed — see *Tuning the Exit Rules* below,
   - thesis break: a fresh price-based trap (new lows / steep downtrend / gap-down).
 - **Every buy and sell is announced** on Telegram with its reason, a plain
   status update goes out every `SIM_UPDATE_INTERVAL_DAYS` (3) days, and a full
@@ -150,6 +155,213 @@ of the month. To start a fresh month later, dispatch the workflow with the
 `reset` input checked (deletes `simulation.json`). State lives in
 `simulation.json` and is committed back by the workflow. This is a simulation
 only — never investment advice.
+
+---
+
+## Replaying a Month After the Fact
+
+`src/simulate.py` can only run forward — one step per cron firing, against
+whatever the price feed returns today — so a month takes a month to see. Two
+modules answer questions about a month that has already happened.
+
+**`src/replay.py` — re-run the book day by day over a past window.**
+
+```bash
+PYTHONPATH=. python -m src.replay 2026-07-28              # a full 30-day month
+PYTHONPATH=. python -m src.replay 2026-07-28 2026-08-27   # explicit end date
+```
+
+It prints the exact Telegram messages the bot would have sent, then a summary.
+How it works, and what is and is not faithful:
+
+- **Prices** come from the offline cache in `data/prices/` (see below),
+  truncated to the day being replayed, so no step can see the future.
+- **Exits** are the production rule — `simulate.evaluate_exit`, unchanged.
+- **Buys** come from the scanner's own recorded alert history
+  (`data/alerts.json`, reconstructed from the committed dedup state), because a
+  buy signal needs the whole S&P 500 universe *and* point-in-time fundamentals,
+  and a price cache can reconstruct neither. Every entry is therefore a signal
+  the live bot really did fire, on the day it fired, at that day's close.
+- **The one judgement call** the alert log does not record is ordering: when
+  more names are flagged than there are free slots, the live scanner ranks by
+  composite score. The replay's tie-break is "most oversold first" (lowest RSI),
+  which is strategy-consistent and uses only cached data.
+- An alert stamped on a non-trading day rolls to the next session; one older
+  than `MAX_SIGNAL_AGE_DAYS` (4) is dropped rather than dragged forward.
+
+The summary reports two different returns, because they are easy to confuse:
+**return on capital** is P&L over the money actually at risk
+(`SIM_CASH_PER_STOCK` x `SIM_MAX_POSITIONS` = $10,000) and is the figure to
+compare against a buy-and-hold benchmark; **return on turnover** is P&L over the
+sum of every position's cost basis, so a book that recycles the same $10,000
+through 26 trades reports $26,000 "invested" and a correspondingly smaller
+percentage. The live Telegram summary prints the turnover figure.
+
+**`src/whatif.py` — value a past book at a later date, as if nothing was sold.**
+
+```bash
+PYTHONPATH=. python -m src.whatif 2026-06-29              # value that day's book today
+PYTHONPATH=. python -m src.whatif 2026-06-29 2026-07-15
+```
+
+This is how the exit rules get judged against simply doing nothing. Bars are the
+broker's and carry retroactive corporate-action adjustments, so for a ticker
+that paid a distribution the cached entry-date close sits below the price the
+bot recorded live; the tool reports both the price change against the entry
+actually paid and the total return on the adjusted series.
+
+### The offline price cache
+
+`data/prices/` holds daily OHLCV bars snapshotted from the broker feed:
+
+```
+data/prices/_dates.json   ["2025-05-06", ...]   shared trading-day index
+data/prices/<TICKER>.json {"open": [...], "high": [...], "low": [...],
+                           "close": [...], "volume": [...]}
+```
+
+A ticker's arrays are right-aligned against `_dates.json`, so a series with N
+bars covers the last N dates. `src/pricecache.py` reads them back in the same
+`{ticker: DataFrame}` shape `src.data.fetch_prices` returns, which is why every
+gate and indicator in the project works unchanged on cached data. The cache
+covers the tickers the simulation and the recorded alert stream actually
+touched, not the whole index — a replay reports any signal it could not price
+rather than silently skipping it.
+
+Fill or deepen it from the live feed (needs network access to the price feed):
+
+```bash
+PYTHONPATH=. python -m src.cachebuild --period 5y     # deepen everything cached
+PYTHONPATH=. python -m src.cachebuild --check         # compare, write nothing
+```
+
+Two things it will not do, because both would quietly invalidate results already
+published from the cache. It refuses to write when re-fetched bars **contradict**
+what is stored, rather than overwriting them; and because a series is addressed
+by position, it refuses a partial re-fetch that would **add sessions at the end**
+of the shared calendar and thereby re-date every ticker it is not rewriting. A
+ticker whose feed has a hole in the middle is reported and skipped rather than
+gap-filled — the store cannot represent a hole, and inventing a bar would put
+prices on disk indistinguishable from real ones.
+
+**Depth is the binding constraint on everything downstream.** The five-year
+`src/backtest.py` replay reads the cache with `--offline`, but needs more than
+`BACKTEST_MIN_HISTORY` (252) sessions per ticker before it can emit a single
+signal, and the validation in `src/validate.py` is only as strong as the number
+of independent windows the cache spans.
+
+---
+
+## Tuning the Exit Rules
+
+`src/tune.py` turns the replay into a measuring instrument. It answers two
+separate questions, and the order matters.
+
+**1. What does a signal do on its own?** `hold_curve` takes every alert in the
+windows, buys at that day's close, and holds for exactly N sessions with no exit
+rule at all:
+
+```bash
+PYTHONPATH=. python -m src.tune curve
+```
+
+If the curve is still climbing at N days, any exit that fires before N is
+leaving money behind. This is the honest starting point, because it is measured
+before any parameter is chosen. By default it keeps only signals with data out
+to the longest horizon, so every row describes the same set of trades — without
+that, late signals drop out of the long horizons and part of the curve is a
+changing sample rather than a changing holding period.
+
+**2. What would the book have returned under a given set of thresholds?**
+`sweep` replays every window under each combination in a grid:
+
+```bash
+PYTHONPATH=. python -m src.tune sweep
+```
+
+`with_overrides` builds a stand-in for the config module, so the production exit
+code runs unmodified against substituted thresholds.
+
+### Reading the results honestly
+
+A grid search over two months will find a winner by construction — there are
+hundreds of combinations and about fifty trades. Three guards, none sufficient:
+
+- `sweep` reports **every window separately**, never only the average, and ranks
+  on the *worst* window's excess return over SPY rather than the mean.
+- `pick` keeps only settings that beat the current configuration in **every**
+  window, which throws away the combinations that win big in one month and lose
+  in the other.
+- The hold curve is computed **independently of the grid**, so agreement between
+  the two is weak evidence rather than the same fit counted twice.
+
+Treat any result here as a hypothesis to check against more history — the
+five-year `src/backtest.py` replay is the right next test — not as a settled
+answer. More cached months make all of this stronger; the cache is the binding
+constraint, not the code.
+
+### What the first pass changed, and what it rejected
+
+Measured over eight rolling 30-day windows (return on the $10,000 book; the
+full table is in `reports/tuning-exit-rules.txt`):
+
+| | mean | worst window | beats SPY |
+|---|---|---|---|
+| before | +4.63% | +0.11% | 5/8 |
+| `SIM_MIN_HOLD_SESSIONS = 10` | **+5.70%** | +0.11% | **7/8** |
+
+Every value from 5 to 15 sessions measures the same to within a tenth of a
+point. 10 is the middle of that plateau, not its argmax — picking the best cell
+of a flat surface is fitting to noise.
+
+The exit-free hold curve is what motivated it: a signal is worth about 0% one
+session after it fires and about +5.6% after 21, because RSI recovers within a
+day or two of a bounce while the reversion being bought takes weeks. Without a
+floor the bounce-done rule was closing the book almost immediately for one or
+two percent. The floor is monotone from 3 to 15 sessions and never makes the
+worst window worse, which is why it was adopted over simply raising
+`SIM_RSI_EXIT` — that lifts the mean about as much but gives up the worst
+window (+0.11% to −0.37%) and effectively deletes the rule instead of deferring
+it.
+
+Three changes that looked good on the two headline months were **rejected**
+after the rolling windows disagreed:
+
+- `SIM_THESIS_BREAK_MIN_LOSS_PCT = 3` gained a point on both headline months and
+  turned the worst rolling window from +0.11% to −1.37%.
+- `SIM_TAKE_PROFIT_PCT = 15` doubled one month's return, but that rested on
+  about four positions and neighbouring grid cells swung by two points.
+- `SIM_STOP_LOSS_PCT` is inert in every window tested — the thesis-break rule
+  reaches losers first, so the stop never fires and there is nothing to tune.
+
+That two of the three survived a 720-combination grid over two months and still
+failed out of sample is the whole argument for the rolling check.
+
+### Checking a result away from where it was fitted
+
+`src/validate.py` re-tests a candidate on windows it was not chosen on:
+
+```bash
+PYTHONPATH=. python -m src.validate
+```
+
+- **Non-overlapping windows.** The rolling windows used for tuning share
+  sessions, so eight of them carry nowhere near eight windows of information.
+  On the current cache only **two** windows are genuinely independent — that is
+  the honest sample size, and the report leads with it.
+- **Walk-forward.** Settings are chosen on the earlier windows and scored on the
+  later ones, which had no vote in the choice.
+- **Paired bootstrap.** Both settings are replayed on the same windows, then
+  whole windows are resampled to put an interval around the difference. The
+  resampling unit is the window, so with overlapping windows the interval is
+  optimistic — a floor on the uncertainty, never a p-value.
+
+On the current cache the verdict is deliberately unflattering: the direction is
+consistent and the adopted setting beats both the baseline and the
+walk-forward's own pick on the held-out windows, but the 95% interval on the two
+independent windows includes zero. The size of the effect is not established.
+Deepening the cache is what changes that, which is what `src/cachebuild.py` is
+for.
 
 ---
 
@@ -176,6 +388,8 @@ All thresholds live in `config.py`. Key knobs:
 | `SUPPRESS_IN_RISK_OFF` | False | Skip all alerts when SPY below 200dma |
 | `STABILIZATION_REQUIRED_RISK_OFF` | 2 | Stabilization signals required in RISK_OFF |
 | `EARNINGS_BLACKOUT_DAYS` | 5 | Flag if earnings within N days |
+| `SIM_DURATION_DAYS` | 30 | Simulation run length — a full month from day one |
+| `SIM_MIN_HOLD_SESSIONS` | 10 | Sessions before the bounce-done exit may fire |
 
 ---
 
@@ -199,6 +413,18 @@ GitHub Actions (daily cron, after US close)
         +--> telegram.py   : send alerts
 
    backtest.py (on demand): replay the gates historically, measure the edge
+
+   replay.py   (on demand): re-run a past month day by day
+        |
+        +--> pricecache.py : offline daily bars (data/prices/), as-of truncation
+        +--> data/alerts.json : the scanner's own recorded alert history
+        +--> simulate.py   : the production exit rule, unchanged
+
+   whatif.py   (on demand): value a past book later, as if nothing was sold
+
+   tune.py     (on demand): measure the exit rules, sweep their thresholds
+   validate.py (on demand): re-test a candidate away from where it was fitted
+   cachebuild.py           : fill data/prices from the live feed
 ```
 
 No always-on server. Zero cost. Everything runs inside the Action and exits.
