@@ -280,6 +280,12 @@ def performance(state: dict, cfg=config, benchmark: str = "SPY",
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        raise SystemExit(
+            "usage: python -m src.replay START [END]\n"
+            "  START  first day of the window (e.g. 2026-07-28)\n"
+            "  END    last day (default: START + SIM_DURATION_DAYS)"
+        )
     start = date.fromisoformat(sys.argv[1])
     end = date.fromisoformat(sys.argv[2]) if len(sys.argv) > 2 else None
     result = replay(start, end)

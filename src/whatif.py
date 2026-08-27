@@ -91,6 +91,12 @@ def hold_forward(state: dict, as_of: date, until: date = None, cfg=config,
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        raise SystemExit(
+            "usage: python -m src.whatif AS_OF [UNTIL]\n"
+            "  AS_OF  the day whose open book to value (e.g. 2026-06-29)\n"
+            "  UNTIL  the day to value it at (default: the last cached session)"
+        )
     state = simulate.load_sim()
     if state is None:
         raise SystemExit(

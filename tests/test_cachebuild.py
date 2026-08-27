@@ -288,3 +288,28 @@ def test_check_only_reports_a_conflict_instead_of_raising(tmp_path, monkeypatch)
 
     with pytest.raises(ValueError, match="contradicts the cache"):
         cachebuild.build(["AAA"], cache_dir=str(cache))
+
+
+def test_nothing_is_left_half_written(tmp_path, monkeypatch):
+    """Staged writes: no ticker file appears against a calendar that is not final."""
+    import json
+    import pandas as pd
+    import src.cachebuild as cachebuild
+    import src.pricecache as pricecache
+
+    cache = tmp_path
+    dates = ["2026-01-05", "2026-01-06"]
+    closes = [1.0, 2.0]
+    frame = pd.DataFrame({"Open": closes, "High": closes, "Low": closes,
+                          "Close": closes, "Volume": [1, 1]},
+                         index=pd.to_datetime(dates))
+    monkeypatch.setattr("src.data.fetch_prices",
+                        lambda *a, **k: {"AAA": frame, "BBB": frame})
+    cachebuild.build(["AAA", "BBB"], cache_dir=str(cache))
+
+    assert not list(cache.glob("*.tmp"))
+    pricecache.clear_cache()
+    calendar = json.loads((cache / "_dates.json").read_text())
+    for ticker in ("AAA", "BBB"):
+        got = pricecache.load_frame(ticker, str(cache))
+        assert [d.strftime("%Y-%m-%d") for d in got.index] == calendar[-len(got):]

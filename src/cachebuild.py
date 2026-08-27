@@ -211,6 +211,11 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
             f"deep as the cache — the default --period is 2y."
         )
 
+    # Every series is stored as "the last N calendar dates", so the format
+    # cannot hold a ticker whose data stops before the calendar does. Once the
+    # calendar grows at the end, any cached ticker not rewritten in this fetch
+    # is exactly that, and there is no way to re-date it correctly — hence the
+    # refusal below rather than a silent shift.
     left_behind = sorted((cached - set(encoded)) | (set(summary["skipped"]) & cached))
     if left_behind and shifts_the_tail and check_only:
         summary["would_refuse"].append(
@@ -222,17 +227,25 @@ def build(tickers: list[str], period: str = "2y", check_only: bool = False,
             f"every cached series it does not rewrite ({len(left_behind)} would be "
             f"left behind: {', '.join(left_behind[:6])}"
             f"{'...' if len(left_behind) > 6 else ''}). "
-            f"Refetch the whole cache instead of a subset."
+            f"Fetch those tickers too (--tickers), or, if the feed has no recent "
+            f"bars for them at all, delete their files: a series stored as 'the "
+            f"last N calendar dates' cannot end before the calendar does."
         )
 
     if check_only:
         return summary
 
-    with open(os.path.join(cache_dir, "_dates.json"), "w") as f:
-        json.dump(calendar, f)
-    for ticker, arrays in encoded.items():
-        with open(os.path.join(cache_dir, f"{ticker}.json"), "w") as f:
-            json.dump(arrays, f)
+    # Every series is addressed by position against the calendar, so a half-done
+    # write leaves the rest of the cache silently re-dated. Stage all of it, then
+    # rename: the exposed window shrinks from the length of the write to the
+    # length of the renames.
+    staged = {os.path.join(cache_dir, "_dates.json"): calendar}
+    staged.update({os.path.join(cache_dir, f"{t}.json"): a for t, a in encoded.items()})
+    for path, payload in staged.items():
+        with open(path + ".tmp", "w") as f:
+            json.dump(payload, f)
+    for path in staged:
+        os.replace(path + ".tmp", path)
     pricecache.clear_cache()
     return summary
 
