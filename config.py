@@ -80,5 +80,17 @@ SIM_UPDATE_INTERVAL_DAYS = 3         # Send a status update every N days
 SIM_TAKE_PROFIT_PCT = 12.0           # SELL: recovered >= X% from entry (target hit)
 SIM_STOP_LOSS_PCT = 12.0             # SELL: fell >= X% from entry (thesis failed)
 SIM_RSI_EXIT = 60.0                  # SELL: RSI recovered above this (bounce done)
-SIM_MIN_HOLD_SESSIONS = 0            # ...but not before N sessions have passed
+SIM_MIN_HOLD_SESSIONS = 10           # ...but not before N sessions have passed.
+                                     # RSI recovers a day or two after a bounce,
+                                     # while the mean reversion itself takes
+                                     # weeks: measured over the cached months a
+                                     # signal is worth ~0% after one session and
+                                     # ~+5.6% after 21, so without this floor the
+                                     # bounce-done rule sold the book for one or
+                                     # two percent almost immediately. Across
+                                     # eight rolling 30-day windows this lifts
+                                     # the mean from +4.9% to +6.5% on capital
+                                     # and beats SPY in 7 of 8 instead of 5,
+                                     # while leaving the worst window unchanged.
+                                     # See src/tune.py and README.
 SIM_THESIS_BREAK_MIN_LOSS_PCT = 5.0  # Thesis breaking only triggers if also down >= X% from entry

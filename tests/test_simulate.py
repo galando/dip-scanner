@@ -214,3 +214,47 @@ def test_sim_end_is_a_full_month_from_day_one():
     assert simulate._sim_end(date(2026, 6, 8)) == date(2026, 7, 8)
     assert simulate._sim_end(date(2026, 6, 1)) == date(2026, 7, 1)
     assert (simulate._sim_end(date(2026, 2, 10)) - date(2026, 2, 10)).days == config.SIM_DURATION_DAYS
+
+
+def test_bounce_exit_waits_for_the_minimum_hold(tmp_path):
+    """A fresh position is not sold on an RSI recovery before the floor.
+
+    RSI comes back within a day or two of a bounce; the reversion the strategy is
+    buying takes weeks. Without the floor the bounce-done rule closes the book
+    almost immediately for a percent or two.
+    """
+    import pandas as pd
+    # Twenty sessions, then a sharp run-up: RSI ends near 100 and the position is
+    # up, which is exactly the state the bounce-done rule fires on.
+    closes = [100.0] * 20 + [101.0, 103.0, 106.0, 110.0]
+    idx = pd.date_range("2026-01-01", periods=len(closes), freq="D")
+    prices = pd.DataFrame({"Open": closes, "High": closes, "Low": closes,
+                           "Close": closes, "Volume": [1000] * len(closes)}, index=idx)
+    pos = {"ticker": "AAA", "entry_price": 100.0, "shares": 10.0,
+           "cost_basis": 1000.0, "entry_date": idx[-3].strftime("%Y-%m-%d")}
+
+    held_2_sessions = simulate.evaluate_exit(pos, prices, simulate.config)
+    assert held_2_sessions[0] is False, "sold after two sessions despite the floor"
+
+    no_floor = _cfg_with(SIM_MIN_HOLD_SESSIONS=0)
+    sell, reason, _ = simulate.evaluate_exit(pos, prices, no_floor)
+    assert sell is True and "bounce done" in reason
+
+
+def test_stop_loss_still_fires_inside_the_minimum_hold(tmp_path):
+    """The floor guards profit-taking only — risk controls must stay immediate."""
+    import pandas as pd
+    closes = [100.0] * 20 + [95.0, 90.0, 85.0, 80.0]
+    idx = pd.date_range("2026-01-01", periods=len(closes), freq="D")
+    prices = pd.DataFrame({"Open": closes, "High": closes, "Low": closes,
+                           "Close": closes, "Volume": [1000] * len(closes)}, index=idx)
+    pos = {"ticker": "AAA", "entry_price": 100.0, "shares": 10.0,
+           "cost_basis": 1000.0, "entry_date": idx[-2].strftime("%Y-%m-%d")}
+    sell, reason, _ = simulate.evaluate_exit(pos, prices, simulate.config)
+    assert sell is True and "stop-loss" in reason
+
+
+def _cfg_with(**overrides):
+    import types
+    base = {k: getattr(config, k) for k in dir(config) if k.isupper()}
+    return types.SimpleNamespace(**{**base, **overrides})

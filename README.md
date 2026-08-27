@@ -277,6 +277,39 @@ five-year `src/backtest.py` replay is the right next test — not as a settled
 answer. More cached months make all of this stronger; the cache is the binding
 constraint, not the code.
 
+### What the first pass changed, and what it rejected
+
+Measured over eight rolling 30-day windows (return on the $10,000 book; the
+full table is in `reports/tuning-exit-rules.txt`):
+
+| | mean | worst window | beats SPY |
+|---|---|---|---|
+| before | +4.92% | +0.11% | 5/8 |
+| `SIM_MIN_HOLD_SESSIONS = 10` | **+6.49%** | +0.11% | **7/8** |
+
+The exit-free hold curve is what motivated it: a signal is worth about 0% one
+session after it fires and about +5.6% after 21, because RSI recovers within a
+day or two of a bounce while the reversion being bought takes weeks. Without a
+floor the bounce-done rule was closing the book almost immediately for one or
+two percent. The floor is monotone from 3 to 15 sessions and never makes the
+worst window worse, which is why it was adopted over simply raising
+`SIM_RSI_EXIT` — that lifts the mean about as much but gives up the worst
+window (+0.11% to −0.37%) and effectively deletes the rule instead of deferring
+it.
+
+Three changes that looked good on the two headline months were **rejected**
+after the rolling windows disagreed:
+
+- `SIM_THESIS_BREAK_MIN_LOSS_PCT = 3` gained a point on both headline months and
+  turned the worst rolling window from +0.11% to −1.37%.
+- `SIM_TAKE_PROFIT_PCT = 15` doubled one month's return, but that rested on
+  about four positions and neighbouring grid cells swung by two points.
+- `SIM_STOP_LOSS_PCT` is inert in every window tested — the thesis-break rule
+  reaches losers first, so the stop never fires and there is nothing to tune.
+
+That two of the three survived a 720-combination grid over two months and still
+failed out of sample is the whole argument for the rolling check.
+
 ---
 
 ## Threshold Tuning
@@ -303,7 +336,7 @@ All thresholds live in `config.py`. Key knobs:
 | `STABILIZATION_REQUIRED_RISK_OFF` | 2 | Stabilization signals required in RISK_OFF |
 | `EARNINGS_BLACKOUT_DAYS` | 5 | Flag if earnings within N days |
 | `SIM_DURATION_DAYS` | 30 | Simulation run length — a full month from day one |
-| `SIM_MIN_HOLD_SESSIONS` | see config | Sessions before the bounce-done exit may fire |
+| `SIM_MIN_HOLD_SESSIONS` | 10 | Sessions before the bounce-done exit may fire |
 
 ---
 
