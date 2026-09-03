@@ -273,43 +273,6 @@
       }
     },
     {
-      "ticker": "LDOS",
-      "name": "Leidos Holdings, Inc.",
-      "entry_price": 139.86000061035156,
-      "entry_date": "2026-08-27",
-      "shares": 7.15000711880439,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -29.3,
-        "rsi": 61.0,
-        "below_200dma": true,
-        "vol_adjusted_drop": 86.29,
-        "atr_distance": -4.86,
-        "stabilization_signals": [
-          "consecutive up closes"
-        ],
-        "stabilization_count": 1,
-        "roe": 27.781,
-        "op_margin": 11.715999,
-        "debt_eq": 123.276,
-        "mkt_cap": 17551339520,
-        "warnings": [],
-        "regime": "RISK_ON",
-        "score": 60.2,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 44,
-          "timing": 10.0,
-          "quality": 15.2,
-          "relative_strength_pct": 20.5,
-          "relative_strength": 10.0,
-          "trap_penalty": -0.0,
-          "total": 60.2
-        }
-      }
-    },
-    {
       "ticker": "RDDT",
       "name": "Reddit, Inc.",
       "entry_price": 153.9499969482422,
@@ -385,9 +348,61 @@
           "total": 56.2
         }
       }
+    },
+    {
+      "ticker": "PODD",
+      "name": "Insulet Corporation",
+      "entry_price": 150.5800018310547,
+      "entry_date": "2026-09-03",
+      "shares": 6.640988098286543,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -57.3,
+        "rsi": 51.9,
+        "below_200dma": true,
+        "vol_adjusted_drop": 128.7,
+        "atr_distance": 0.64,
+        "stabilization_signals": [
+          "higher low",
+          "consecutive up closes"
+        ],
+        "stabilization_count": 2,
+        "roe": 26.016000000000002,
+        "op_margin": 16.178,
+        "debt_eq": 66.685,
+        "mkt_cap": 10443355136,
+        "warnings": [],
+        "regime": "RISK_ON",
+        "score": 72.3,
+        "score_breakdown": {
+          "depth": 25.0,
+          "volume_confirmed": false,
+          "days_since_low": 21,
+          "timing": 20.0,
+          "quality": 17.3,
+          "relative_strength_pct": 7.5,
+          "relative_strength": 10.0,
+          "trap_penalty": -0.0,
+          "total": 72.3
+        }
+      }
     }
   ],
-  "closed": [],
+  "closed": [
+    {
+      "ticker": "LDOS",
+      "name": "Leidos Holdings, Inc.",
+      "entry_price": 139.86000061035156,
+      "entry_date": "2026-08-27",
+      "exit_price": 132.36000061035156,
+      "exit_date": "2026-09-03",
+      "shares": 7.15000711880439,
+      "cost_basis": 1000.0,
+      "pnl": -53.62505339103291,
+      "pnl_pct": -5.362505339103296,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.4% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.4% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    }
+  ],
   "updates_sent": [
     "2026-08-30",
     "2026-09-02"
