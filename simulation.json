@@ -157,43 +157,6 @@
       }
     },
     {
-      "ticker": "INTU",
-      "name": "Intuit Inc.",
-      "entry_price": 348.0,
-      "entry_date": "2026-08-27",
-      "shares": 2.8735632183908044,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -49.9,
-        "rsi": 56.1,
-        "below_200dma": true,
-        "vol_adjusted_drop": 103.37,
-        "atr_distance": -2.71,
-        "stabilization_signals": [
-          "consecutive up closes"
-        ],
-        "stabilization_count": 1,
-        "roe": 23.596,
-        "op_margin": 17.638999,
-        "debt_eq": 43.892,
-        "mkt_cap": 95190876160,
-        "warnings": [],
-        "regime": "RISK_ON",
-        "score": 66.9,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": true,
-          "days_since_low": 44,
-          "timing": 15.0,
-          "quality": 16.9,
-          "relative_strength_pct": 6.3,
-          "relative_strength": 10.0,
-          "trap_penalty": -0.0,
-          "total": 66.9
-        }
-      }
-    },
-    {
       "ticker": "META",
       "name": "Meta Platforms, Inc.",
       "entry_price": 571.0999755859375,
@@ -386,6 +349,46 @@
           "total": 72.3
         }
       }
+    },
+    {
+      "ticker": "CHRW",
+      "name": "C.H. Robinson Worldwide, Inc.",
+      "entry_price": 150.10000610351562,
+      "entry_date": "2026-09-08",
+      "shares": 6.662224912305171,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -28.0,
+        "rsi": 46.8,
+        "below_200dma": true,
+        "vol_adjusted_drop": 63.0,
+        "atr_distance": 3.55,
+        "stabilization_signals": [
+          "higher low",
+          "consecutive up closes"
+        ],
+        "stabilization_count": 2,
+        "roe": 37.123,
+        "op_margin": 5.337,
+        "debt_eq": 121.188,
+        "mkt_cap": 17539375104,
+        "warnings": [
+          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -4.1% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -4.1% in 10 days"
+        ],
+        "regime": "RISK_ON",
+        "score": 60.0,
+        "score_breakdown": {
+          "depth": 25.0,
+          "volume_confirmed": false,
+          "days_since_low": 11,
+          "timing": 22.0,
+          "quality": 14.7,
+          "relative_strength_pct": 2.6,
+          "relative_strength": 8.4,
+          "trap_penalty": -10.0,
+          "total": 60.0
+        }
+      }
     }
   ],
   "closed": [
@@ -401,11 +404,25 @@
       "pnl": -53.62505339103291,
       "pnl_pct": -5.362505339103296,
       "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.4% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.4% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "INTU",
+      "name": "Intuit Inc.",
+      "entry_price": 348.0,
+      "entry_date": "2026-08-27",
+      "exit_price": 318.92999267578125,
+      "exit_date": "2026-09-08",
+      "shares": 2.8735632183908044,
+      "cost_basis": 1000.0,
+      "pnl": -83.53450380522634,
+      "pnl_pct": -8.35345038052263,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -8.4% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -8.4% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
     }
   ],
   "updates_sent": [
     "2026-08-30",
     "2026-09-02",
-    "2026-09-05"
+    "2026-09-05",
+    "2026-09-08"
   ]
 }
