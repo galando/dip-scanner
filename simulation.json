@@ -157,45 +157,6 @@
       }
     },
     {
-      "ticker": "META",
-      "name": "Meta Platforms, Inc.",
-      "entry_price": 571.0999755859375,
-      "entry_date": "2026-08-27",
-      "shares": 1.7510069037807598,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -26.6,
-        "rsi": 46.9,
-        "below_200dma": true,
-        "vol_adjusted_drop": 68.39,
-        "atr_distance": 1.03,
-        "stabilization_signals": [
-          "higher low"
-        ],
-        "stabilization_count": 1,
-        "roe": 29.848000000000003,
-        "op_margin": 34.827000000000005,
-        "debt_eq": 42.997,
-        "mkt_cap": 1454880718848,
-        "warnings": [
-          "\u05d9\u05e8\u05d9\u05d3\u05d4 \u05d1\u05e8\u05d5\u05d5\u05d7\u05d9\u05dd: -13% / Earnings down -13%"
-        ],
-        "regime": "RISK_ON",
-        "score": 61.5,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 20,
-          "timing": 10.0,
-          "quality": 23.5,
-          "relative_strength_pct": 2.0,
-          "relative_strength": 8.0,
-          "trap_penalty": -5.0,
-          "total": 61.5
-        }
-      }
-    },
-    {
       "ticker": "APP",
       "name": "Applovin Corporation",
       "entry_price": 312.6300048828125,
@@ -313,44 +274,6 @@
       }
     },
     {
-      "ticker": "PODD",
-      "name": "Insulet Corporation",
-      "entry_price": 150.5800018310547,
-      "entry_date": "2026-09-03",
-      "shares": 6.640988098286543,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -57.3,
-        "rsi": 51.9,
-        "below_200dma": true,
-        "vol_adjusted_drop": 128.7,
-        "atr_distance": 0.64,
-        "stabilization_signals": [
-          "higher low",
-          "consecutive up closes"
-        ],
-        "stabilization_count": 2,
-        "roe": 26.016000000000002,
-        "op_margin": 16.178,
-        "debt_eq": 66.685,
-        "mkt_cap": 10443355136,
-        "warnings": [],
-        "regime": "RISK_ON",
-        "score": 72.3,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 21,
-          "timing": 20.0,
-          "quality": 17.3,
-          "relative_strength_pct": 7.5,
-          "relative_strength": 10.0,
-          "trap_penalty": -0.0,
-          "total": 72.3
-        }
-      }
-    },
-    {
       "ticker": "CHRW",
       "name": "C.H. Robinson Worldwide, Inc.",
       "entry_price": 150.10000610351562,
@@ -389,6 +312,82 @@
           "total": 60.0
         }
       }
+    },
+    {
+      "ticker": "UHS",
+      "name": "Universal Health Services, Inc.",
+      "entry_price": 175.77999877929688,
+      "entry_date": "2026-09-09",
+      "shares": 5.688929383004289,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -27.7,
+        "rsi": 60.2,
+        "below_200dma": true,
+        "vol_adjusted_drop": 86.06,
+        "atr_distance": -2.23,
+        "stabilization_signals": [
+          "consecutive up closes"
+        ],
+        "stabilization_count": 1,
+        "roe": 20.948,
+        "op_margin": 11.14,
+        "debt_eq": 68.74,
+        "mkt_cap": 10359860224,
+        "warnings": [],
+        "regime": "RISK_ON",
+        "score": 62.2,
+        "score_breakdown": {
+          "depth": 25.0,
+          "volume_confirmed": true,
+          "days_since_low": 56,
+          "timing": 15.0,
+          "quality": 12.2,
+          "relative_strength_pct": 5.4,
+          "relative_strength": 10.0,
+          "trap_penalty": -0.0,
+          "total": 62.2
+        }
+      }
+    },
+    {
+      "ticker": "NXPI",
+      "name": "NXP Semiconductors N.V.",
+      "entry_price": 223.32000732421875,
+      "entry_date": "2026-09-09",
+      "shares": 4.477879129513854,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -32.6,
+        "rsi": 40.3,
+        "below_200dma": true,
+        "vol_adjusted_drop": 66.63,
+        "atr_distance": 3.43,
+        "stabilization_signals": [
+          "higher low"
+        ],
+        "stabilization_count": 1,
+        "roe": 27.921000000000003,
+        "op_margin": 30.406,
+        "debt_eq": 93.325,
+        "mkt_cap": 56313307136,
+        "warnings": [
+          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -5.7% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -5.7% in 10 days"
+        ],
+        "regime": "RISK_ON",
+        "score": 54.2,
+        "score_breakdown": {
+          "depth": 25.0,
+          "volume_confirmed": false,
+          "days_since_low": 5,
+          "timing": 15.0,
+          "quality": 20.5,
+          "relative_strength_pct": -4.5,
+          "relative_strength": 3.7,
+          "trap_penalty": -10.0,
+          "total": 54.2
+        }
+      }
     }
   ],
   "closed": [
@@ -416,6 +415,32 @@
       "cost_basis": 1000.0,
       "pnl": -83.53450380522634,
       "pnl_pct": -8.35345038052263,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -8.4% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -8.4% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "META",
+      "name": "Meta Platforms, Inc.",
+      "entry_price": 571.0999755859375,
+      "entry_date": "2026-08-27",
+      "exit_price": 653.6900024414062,
+      "exit_date": "2026-09-09",
+      "shares": 1.7510069037807598,
+      "cost_basis": 1000.0,
+      "pnl": 144.61570720736404,
+      "pnl_pct": 14.461570720736416,
+      "sell_reason": "\u05d9\u05e2\u05d3 \u05e8\u05d5\u05d5\u05d7: \u05e2\u05dc\u05ea\u05d4 +14.5% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 / target hit, up +14.5% from entry"
+    },
+    {
+      "ticker": "PODD",
+      "name": "Insulet Corporation",
+      "entry_price": 150.5800018310547,
+      "entry_date": "2026-09-03",
+      "exit_price": 137.9199981689453,
+      "exit_date": "2026-09-09",
+      "shares": 6.640988098286543,
+      "cost_basis": 1000.0,
+      "pnl": -84.07493364433242,
+      "pnl_pct": -8.407493364433238,
       "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -8.4% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -8.4% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
     }
   ],
