@@ -82,44 +82,6 @@
       }
     },
     {
-      "ticker": "CPRT",
-      "name": "Copart, Inc.",
-      "entry_price": 32.7599983215332,
-      "entry_date": "2026-08-27",
-      "shares": 30.525032088988183,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -34.4,
-        "rsi": 61.2,
-        "below_200dma": true,
-        "vol_adjusted_drop": 115.37,
-        "atr_distance": -2.74,
-        "stabilization_signals": [
-          "higher low",
-          "consecutive up closes"
-        ],
-        "stabilization_count": 2,
-        "roe": 17.607,
-        "op_margin": 37.530997,
-        "debt_eq": 1.059,
-        "mkt_cap": 30329581568,
-        "warnings": [],
-        "regime": "RISK_ON",
-        "score": 71.7,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 27,
-          "timing": 20.0,
-          "quality": 16.7,
-          "relative_strength_pct": 6.8,
-          "relative_strength": 10.0,
-          "trap_penalty": -0.0,
-          "total": 71.7
-        }
-      }
-    },
-    {
       "ticker": "NFLX",
       "name": "Netflix, Inc.",
       "entry_price": 79.83999633789062,
@@ -388,6 +350,43 @@
           "total": 54.2
         }
       }
+    },
+    {
+      "ticker": "ADSK",
+      "name": "Autodesk, Inc.",
+      "entry_price": 212.39999389648438,
+      "entry_date": "2026-09-11",
+      "shares": 4.7080980637285785,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -34.6,
+        "rsi": 35.5,
+        "below_200dma": true,
+        "vol_adjusted_drop": 93.19,
+        "atr_distance": 1.96,
+        "stabilization_signals": [
+          "consecutive up closes"
+        ],
+        "stabilization_count": 1,
+        "roe": 53.854,
+        "op_margin": 29.228001999999996,
+        "debt_eq": 109.518,
+        "mkt_cap": 44391600128,
+        "warnings": [],
+        "regime": "RISK_ON",
+        "score": 56.3,
+        "score_breakdown": {
+          "depth": 25.0,
+          "volume_confirmed": false,
+          "days_since_low": 57,
+          "timing": 10.0,
+          "quality": 21.3,
+          "relative_strength_pct": -15.9,
+          "relative_strength": 0.0,
+          "trap_penalty": -0.0,
+          "total": 56.3
+        }
+      }
     }
   ],
   "closed": [
@@ -442,12 +441,26 @@
       "pnl": -84.07493364433242,
       "pnl_pct": -8.407493364433238,
       "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -8.4% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -8.4% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "CPRT",
+      "name": "Copart, Inc.",
+      "entry_price": 32.7599983215332,
+      "entry_date": "2026-08-27",
+      "exit_price": 29.950000762939453,
+      "exit_date": "2026-09-11",
+      "shares": 30.525032088988183,
+      "cost_basis": 1000.0,
+      "pnl": -85.77526564605262,
+      "pnl_pct": -8.577526564605265,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -8.6% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -8.6% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
     }
   ],
   "updates_sent": [
     "2026-08-30",
     "2026-09-02",
     "2026-09-05",
-    "2026-09-08"
+    "2026-09-08",
+    "2026-09-11"
   ]
 }
