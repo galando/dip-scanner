@@ -6,44 +6,6 @@
   "max_positions": 10,
   "positions": [
     {
-      "ticker": "TPL",
-      "name": "Texas Pacific Land Corporation",
-      "entry_price": 369.7099914550781,
-      "entry_date": "2026-08-27",
-      "shares": 2.7048227613873013,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -31.4,
-        "rsi": 46.8,
-        "below_200dma": true,
-        "vol_adjusted_drop": 64.87,
-        "atr_distance": 1.08,
-        "stabilization_signals": [
-          "higher low",
-          "consecutive up closes"
-        ],
-        "stabilization_count": 2,
-        "roe": 36.565999999999995,
-        "op_margin": 78.17699999999999,
-        "debt_eq": 1.077,
-        "mkt_cap": 25500628992,
-        "warnings": [],
-        "regime": "RISK_ON",
-        "score": 72.0,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 14,
-          "timing": 22.0,
-          "quality": 25.0,
-          "relative_strength_pct": -10.2,
-          "relative_strength": 0.0,
-          "trap_penalty": -0.0,
-          "total": 72.0
-        }
-      }
-    },
-    {
       "ticker": "NFLX",
       "name": "Netflix, Inc.",
       "entry_price": 79.83999633789062,
@@ -348,42 +310,77 @@
       }
     },
     {
-      "ticker": "ROL",
-      "name": "Rollins, Inc.",
-      "entry_price": 35.310001373291016,
-      "entry_date": "2026-09-14",
-      "shares": 28.320587966796687,
+      "ticker": "SYK",
+      "name": "Stryker Corporation",
+      "entry_price": 284.760009765625,
+      "entry_date": "2026-09-16",
+      "shares": 3.511729055013945,
       "cost_basis": 1000.0,
       "entry_reason": {
-        "drawdown_pct": -45.6,
-        "rsi": 38.4,
+        "drawdown_pct": -26.1,
+        "rsi": 35.4,
         "below_200dma": true,
-        "vol_adjusted_drop": 169.39,
-        "atr_distance": 3.87,
+        "vol_adjusted_drop": 88.33,
+        "atr_distance": 3.63,
         "stabilization_signals": [
           "RSI turning up from oversold",
           "consecutive up closes"
         ],
         "stabilization_count": 2,
-        "roe": 37.008998,
-        "op_margin": 18.799,
-        "debt_eq": 78.015,
-        "mkt_cap": 16989245440,
-        "warnings": [
-          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -3.9% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -3.9% in 10 days"
-        ],
+        "roe": 16.508,
+        "op_margin": 27.015,
+        "debt_eq": 64.391,
+        "mkt_cap": 109226270720,
+        "warnings": [],
         "regime": "RISK_ON",
-        "score": 66.8,
+        "score": 68.9,
+        "score_breakdown": {
+          "depth": 25.0,
+          "volume_confirmed": true,
+          "days_since_low": 4,
+          "timing": 30.0,
+          "quality": 13.9,
+          "relative_strength_pct": -12.3,
+          "relative_strength": 0.0,
+          "trap_penalty": -0.0,
+          "total": 68.9
+        }
+      }
+    },
+    {
+      "ticker": "IDXX",
+      "name": "IDEXX Laboratories, Inc.",
+      "entry_price": 513.6199951171875,
+      "entry_date": "2026-09-16",
+      "shares": 1.9469647005698056,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -33.0,
+        "rsi": 37.3,
+        "below_200dma": true,
+        "vol_adjusted_drop": 102.21,
+        "atr_distance": 2.65,
+        "stabilization_signals": [
+          "consecutive up closes"
+        ],
+        "stabilization_count": 1,
+        "roe": 74.211,
+        "op_margin": 34.98,
+        "debt_eq": 67.971,
+        "mkt_cap": 40463556608,
+        "warnings": [],
+        "regime": "RISK_ON",
+        "score": 65.8,
         "score_breakdown": {
           "depth": 25.0,
           "volume_confirmed": false,
           "days_since_low": 3,
-          "timing": 25.0,
-          "quality": 20.4,
-          "relative_strength_pct": -0.5,
-          "relative_strength": 6.4,
-          "trap_penalty": -10.0,
-          "total": 66.8
+          "timing": 15.0,
+          "quality": 22.7,
+          "relative_strength_pct": -5.4,
+          "relative_strength": 3.0,
+          "trap_penalty": -0.0,
+          "total": 65.8
         }
       }
     }
@@ -479,6 +476,32 @@
       "pnl": -63.17055382795638,
       "pnl_pct": -6.317055382795633,
       "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -6.3% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -6.3% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "TPL",
+      "name": "Texas Pacific Land Corporation",
+      "entry_price": 369.7099914550781,
+      "entry_date": "2026-08-27",
+      "exit_price": 348.57000732421875,
+      "exit_date": "2026-09-16",
+      "shares": 2.7048227613873013,
+      "cost_basis": 1000.0,
+      "pnl": -57.17991025251479,
+      "pnl_pct": -5.717991025251479,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.7% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.7% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "ROL",
+      "name": "Rollins, Inc.",
+      "entry_price": 35.310001373291016,
+      "entry_date": "2026-09-14",
+      "exit_price": 33.529998779296875,
+      "exit_date": "2026-09-16",
+      "shares": 28.320587966796687,
+      "cost_basis": 1000.0,
+      "pnl": -50.41072004433727,
+      "pnl_pct": -5.041072004433733,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.0% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.0% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
     }
   ],
   "updates_sent": [
