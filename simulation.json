@@ -6,43 +6,6 @@
   "max_positions": 10,
   "positions": [
     {
-      "ticker": "NFLX",
-      "name": "Netflix, Inc.",
-      "entry_price": 79.83999633789062,
-      "entry_date": "2026-08-27",
-      "shares": 12.52505067470072,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -36.8,
-        "rsi": 58.4,
-        "below_200dma": true,
-        "vol_adjusted_drop": 103.39,
-        "atr_distance": -2.34,
-        "stabilization_signals": [
-          "higher low"
-        ],
-        "stabilization_count": 1,
-        "roe": 49.541000000000004,
-        "op_margin": 33.381,
-        "debt_eq": 55.236,
-        "mkt_cap": 332448923648,
-        "warnings": [],
-        "regime": "RISK_ON",
-        "score": 68.2,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 28,
-          "timing": 10.0,
-          "quality": 23.2,
-          "relative_strength_pct": 5.2,
-          "relative_strength": 10.0,
-          "trap_penalty": -0.0,
-          "total": 68.2
-        }
-      }
-    },
-    {
       "ticker": "APP",
       "name": "Applovin Corporation",
       "entry_price": 312.6300048828125,
@@ -383,6 +346,44 @@
           "total": 65.8
         }
       }
+    },
+    {
+      "ticker": "ACN",
+      "name": "Accenture plc",
+      "entry_price": 190.2899932861328,
+      "entry_date": "2026-09-17",
+      "shares": 5.255137081729425,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -32.7,
+        "rsi": 58.2,
+        "below_200dma": true,
+        "vol_adjusted_drop": 72.75,
+        "atr_distance": -3.02,
+        "stabilization_signals": [
+          "higher low",
+          "consecutive up closes"
+        ],
+        "stabilization_count": 2,
+        "roe": 24.406,
+        "op_margin": 16.964000000000002,
+        "debt_eq": 25.035,
+        "mkt_cap": 116446453760,
+        "warnings": [],
+        "regime": "RISK_ON",
+        "score": 72.7,
+        "score_breakdown": {
+          "depth": 25.0,
+          "volume_confirmed": false,
+          "days_since_low": 55,
+          "timing": 20.0,
+          "quality": 17.9,
+          "relative_strength_pct": 4.7,
+          "relative_strength": 9.8,
+          "trap_penalty": -0.0,
+          "total": 72.7
+        }
+      }
     }
   ],
   "closed": [
@@ -502,6 +503,19 @@
       "pnl": -50.41072004433727,
       "pnl_pct": -5.041072004433733,
       "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.0% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.0% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "NFLX",
+      "name": "Netflix, Inc.",
+      "entry_price": 79.83999633789062,
+      "entry_date": "2026-08-27",
+      "exit_price": 75.30999755859375,
+      "exit_date": "2026-09-17",
+      "shares": 12.52505067470072,
+      "cost_basis": 1000.0,
+      "pnl": -56.73846426702573,
+      "pnl_pct": -5.673846426702578,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.7% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.7% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
     }
   ],
   "updates_sent": [
@@ -510,6 +524,7 @@
     "2026-09-05",
     "2026-09-08",
     "2026-09-11",
-    "2026-09-14"
+    "2026-09-14",
+    "2026-09-17"
   ]
 }
