@@ -236,43 +236,6 @@
       }
     },
     {
-      "ticker": "ADBE",
-      "name": "Adobe Inc.",
-      "entry_price": 265.6000061035156,
-      "entry_date": "2026-09-14",
-      "shares": 3.7650601544423816,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -27.7,
-        "rsi": 50.6,
-        "below_200dma": true,
-        "vol_adjusted_drop": 68.19,
-        "atr_distance": -1.09,
-        "stabilization_signals": [
-          "consecutive up closes"
-        ],
-        "stabilization_count": 1,
-        "roe": 61.902,
-        "op_margin": 34.821999999999996,
-        "debt_eq": 57.48,
-        "mkt_cap": 105576005632,
-        "warnings": [],
-        "regime": "RISK_ON",
-        "score": 71.5,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": true,
-          "days_since_low": 55,
-          "timing": 15.0,
-          "quality": 23.1,
-          "relative_strength_pct": 2.6,
-          "relative_strength": 8.4,
-          "trap_penalty": -0.0,
-          "total": 71.5
-        }
-      }
-    },
-    {
       "ticker": "SYK",
       "name": "Stryker Corporation",
       "entry_price": 284.760009765625,
@@ -382,6 +345,47 @@
           "relative_strength": 9.8,
           "trap_penalty": -0.0,
           "total": 72.7
+        }
+      }
+    },
+    {
+      "ticker": "CDNS",
+      "name": "Cadence Design Systems, Inc.",
+      "entry_price": 302.95001220703125,
+      "entry_date": "2026-09-22",
+      "shares": 3.3008745987988797,
+      "cost_basis": 1000.0,
+      "entry_reason": {
+        "drawdown_pct": -27.2,
+        "rsi": 49.3,
+        "below_200dma": true,
+        "vol_adjusted_drop": 67.92,
+        "atr_distance": 1.8,
+        "stabilization_signals": [
+          "RSI turning up from oversold",
+          "higher low",
+          "consecutive up closes"
+        ],
+        "stabilization_count": 3,
+        "roe": 23.229,
+        "op_margin": 28.575,
+        "debt_eq": 38.661,
+        "mkt_cap": 83558457344,
+        "warnings": [
+          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -5.4% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -5.4% in 10 days"
+        ],
+        "regime": "RISK_ON",
+        "score": 62.1,
+        "score_breakdown": {
+          "depth": 25.0,
+          "volume_confirmed": false,
+          "days_since_low": 5,
+          "timing": 25.0,
+          "quality": 19.2,
+          "relative_strength_pct": -5.7,
+          "relative_strength": 2.9,
+          "trap_penalty": -10.0,
+          "total": 62.1
         }
       }
     }
@@ -516,6 +520,19 @@
       "pnl": -56.73846426702573,
       "pnl_pct": -5.673846426702578,
       "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -5.7% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -5.7% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "ADBE",
+      "name": "Adobe Inc.",
+      "entry_price": 265.6000061035156,
+      "entry_date": "2026-09-14",
+      "exit_price": 238.25,
+      "exit_date": "2026-09-22",
+      "shares": 3.7650601544423816,
+      "cost_basis": 1000.0,
+      "pnl": -102.97441820410256,
+      "pnl_pct": -10.297441820410258,
+      "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -10.3% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -10.3% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
     }
   ],
   "updates_sent": [
