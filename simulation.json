@@ -1,395 +1,10 @@
 {
-  "status": "RUNNING",
+  "status": "DONE",
   "start_date": "2026-08-27",
   "end_date": "2026-09-26",
   "cash_per_stock": 1000.0,
   "max_positions": 10,
-  "positions": [
-    {
-      "ticker": "APP",
-      "name": "Applovin Corporation",
-      "entry_price": 312.6300048828125,
-      "entry_date": "2026-08-27",
-      "shares": 3.1986693035904983,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -57.4,
-        "rsi": 35.3,
-        "below_200dma": true,
-        "vol_adjusted_drop": 77.28,
-        "atr_distance": 5.56,
-        "stabilization_signals": [
-          "RSI turning up from oversold",
-          "consecutive up closes"
-        ],
-        "stabilization_count": 2,
-        "roe": 203.68599999999998,
-        "op_margin": 77.678,
-        "debt_eq": 111.13,
-        "mkt_cap": 105024774144,
-        "warnings": [
-          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -9.6% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -9.6% in 10 days"
-        ],
-        "regime": "RISK_ON",
-        "score": 61.3,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 3,
-          "timing": 25.0,
-          "quality": 21.3,
-          "relative_strength_pct": -26.6,
-          "relative_strength": 0.0,
-          "trap_penalty": -10.0,
-          "total": 61.3
-        }
-      }
-    },
-    {
-      "ticker": "RDDT",
-      "name": "Reddit, Inc.",
-      "entry_price": 153.9499969482422,
-      "entry_date": "2026-08-27",
-      "shares": 6.495615588327675,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -43.1,
-        "rsi": 45.1,
-        "below_200dma": true,
-        "vol_adjusted_drop": 60.43,
-        "atr_distance": 1.74,
-        "stabilization_signals": [
-          "higher low"
-        ],
-        "stabilization_count": 1,
-        "roe": 30.712,
-        "op_margin": 28.788000000000004,
-        "debt_eq": 0.635,
-        "mkt_cap": 29619441664,
-        "warnings": [],
-        "regime": "RISK_ON",
-        "score": 60.0,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 19,
-          "timing": 10.0,
-          "quality": 25.0,
-          "relative_strength_pct": -17.5,
-          "relative_strength": 0.0,
-          "trap_penalty": -0.0,
-          "total": 60.0
-        }
-      }
-    },
-    {
-      "ticker": "CHRW",
-      "name": "C.H. Robinson Worldwide, Inc.",
-      "entry_price": 150.10000610351562,
-      "entry_date": "2026-09-08",
-      "shares": 6.662224912305171,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -28.0,
-        "rsi": 46.8,
-        "below_200dma": true,
-        "vol_adjusted_drop": 63.0,
-        "atr_distance": 3.55,
-        "stabilization_signals": [
-          "higher low",
-          "consecutive up closes"
-        ],
-        "stabilization_count": 2,
-        "roe": 37.123,
-        "op_margin": 5.337,
-        "debt_eq": 121.188,
-        "mkt_cap": 17539375104,
-        "warnings": [
-          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -4.1% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -4.1% in 10 days"
-        ],
-        "regime": "RISK_ON",
-        "score": 60.0,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 11,
-          "timing": 22.0,
-          "quality": 14.7,
-          "relative_strength_pct": 2.6,
-          "relative_strength": 8.4,
-          "trap_penalty": -10.0,
-          "total": 60.0
-        }
-      }
-    },
-    {
-      "ticker": "UHS",
-      "name": "Universal Health Services, Inc.",
-      "entry_price": 175.77999877929688,
-      "entry_date": "2026-09-09",
-      "shares": 5.688929383004289,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -27.7,
-        "rsi": 60.2,
-        "below_200dma": true,
-        "vol_adjusted_drop": 86.06,
-        "atr_distance": -2.23,
-        "stabilization_signals": [
-          "consecutive up closes"
-        ],
-        "stabilization_count": 1,
-        "roe": 20.948,
-        "op_margin": 11.14,
-        "debt_eq": 68.74,
-        "mkt_cap": 10359860224,
-        "warnings": [],
-        "regime": "RISK_ON",
-        "score": 62.2,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": true,
-          "days_since_low": 56,
-          "timing": 15.0,
-          "quality": 12.2,
-          "relative_strength_pct": 5.4,
-          "relative_strength": 10.0,
-          "trap_penalty": -0.0,
-          "total": 62.2
-        }
-      }
-    },
-    {
-      "ticker": "NXPI",
-      "name": "NXP Semiconductors N.V.",
-      "entry_price": 223.32000732421875,
-      "entry_date": "2026-09-09",
-      "shares": 4.477879129513854,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -32.6,
-        "rsi": 40.3,
-        "below_200dma": true,
-        "vol_adjusted_drop": 66.63,
-        "atr_distance": 3.43,
-        "stabilization_signals": [
-          "higher low"
-        ],
-        "stabilization_count": 1,
-        "roe": 27.921000000000003,
-        "op_margin": 30.406,
-        "debt_eq": 93.325,
-        "mkt_cap": 56313307136,
-        "warnings": [
-          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -5.7% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -5.7% in 10 days"
-        ],
-        "regime": "RISK_ON",
-        "score": 54.2,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 5,
-          "timing": 15.0,
-          "quality": 20.5,
-          "relative_strength_pct": -4.5,
-          "relative_strength": 3.7,
-          "trap_penalty": -10.0,
-          "total": 54.2
-        }
-      }
-    },
-    {
-      "ticker": "ADSK",
-      "name": "Autodesk, Inc.",
-      "entry_price": 212.39999389648438,
-      "entry_date": "2026-09-11",
-      "shares": 4.7080980637285785,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -34.6,
-        "rsi": 35.5,
-        "below_200dma": true,
-        "vol_adjusted_drop": 93.19,
-        "atr_distance": 1.96,
-        "stabilization_signals": [
-          "consecutive up closes"
-        ],
-        "stabilization_count": 1,
-        "roe": 53.854,
-        "op_margin": 29.228001999999996,
-        "debt_eq": 109.518,
-        "mkt_cap": 44391600128,
-        "warnings": [],
-        "regime": "RISK_ON",
-        "score": 56.3,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 57,
-          "timing": 10.0,
-          "quality": 21.3,
-          "relative_strength_pct": -15.9,
-          "relative_strength": 0.0,
-          "trap_penalty": -0.0,
-          "total": 56.3
-        }
-      }
-    },
-    {
-      "ticker": "SYK",
-      "name": "Stryker Corporation",
-      "entry_price": 284.760009765625,
-      "entry_date": "2026-09-16",
-      "shares": 3.511729055013945,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -26.1,
-        "rsi": 35.4,
-        "below_200dma": true,
-        "vol_adjusted_drop": 88.33,
-        "atr_distance": 3.63,
-        "stabilization_signals": [
-          "RSI turning up from oversold",
-          "consecutive up closes"
-        ],
-        "stabilization_count": 2,
-        "roe": 16.508,
-        "op_margin": 27.015,
-        "debt_eq": 64.391,
-        "mkt_cap": 109226270720,
-        "warnings": [],
-        "regime": "RISK_ON",
-        "score": 68.9,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": true,
-          "days_since_low": 4,
-          "timing": 30.0,
-          "quality": 13.9,
-          "relative_strength_pct": -12.3,
-          "relative_strength": 0.0,
-          "trap_penalty": -0.0,
-          "total": 68.9
-        }
-      }
-    },
-    {
-      "ticker": "IDXX",
-      "name": "IDEXX Laboratories, Inc.",
-      "entry_price": 513.6199951171875,
-      "entry_date": "2026-09-16",
-      "shares": 1.9469647005698056,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -33.0,
-        "rsi": 37.3,
-        "below_200dma": true,
-        "vol_adjusted_drop": 102.21,
-        "atr_distance": 2.65,
-        "stabilization_signals": [
-          "consecutive up closes"
-        ],
-        "stabilization_count": 1,
-        "roe": 74.211,
-        "op_margin": 34.98,
-        "debt_eq": 67.971,
-        "mkt_cap": 40463556608,
-        "warnings": [],
-        "regime": "RISK_ON",
-        "score": 65.8,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 3,
-          "timing": 15.0,
-          "quality": 22.7,
-          "relative_strength_pct": -5.4,
-          "relative_strength": 3.0,
-          "trap_penalty": -0.0,
-          "total": 65.8
-        }
-      }
-    },
-    {
-      "ticker": "ACN",
-      "name": "Accenture plc",
-      "entry_price": 190.2899932861328,
-      "entry_date": "2026-09-17",
-      "shares": 5.255137081729425,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -32.7,
-        "rsi": 58.2,
-        "below_200dma": true,
-        "vol_adjusted_drop": 72.75,
-        "atr_distance": -3.02,
-        "stabilization_signals": [
-          "higher low",
-          "consecutive up closes"
-        ],
-        "stabilization_count": 2,
-        "roe": 24.406,
-        "op_margin": 16.964000000000002,
-        "debt_eq": 25.035,
-        "mkt_cap": 116446453760,
-        "warnings": [],
-        "regime": "RISK_ON",
-        "score": 72.7,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 55,
-          "timing": 20.0,
-          "quality": 17.9,
-          "relative_strength_pct": 4.7,
-          "relative_strength": 9.8,
-          "trap_penalty": -0.0,
-          "total": 72.7
-        }
-      }
-    },
-    {
-      "ticker": "CDNS",
-      "name": "Cadence Design Systems, Inc.",
-      "entry_price": 302.95001220703125,
-      "entry_date": "2026-09-22",
-      "shares": 3.3008745987988797,
-      "cost_basis": 1000.0,
-      "entry_reason": {
-        "drawdown_pct": -27.2,
-        "rsi": 49.3,
-        "below_200dma": true,
-        "vol_adjusted_drop": 67.92,
-        "atr_distance": 1.8,
-        "stabilization_signals": [
-          "RSI turning up from oversold",
-          "higher low",
-          "consecutive up closes"
-        ],
-        "stabilization_count": 3,
-        "roe": 23.229,
-        "op_margin": 28.575,
-        "debt_eq": 38.661,
-        "mkt_cap": 83558457344,
-        "warnings": [
-          "\u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4: \u05de\u05de\u05d5\u05e6\u05e2 50 \u05d9\u05d5\u05dd \u05d9\u05e8\u05d3 -5.4% \u05d1-10 \u05d9\u05de\u05d9\u05dd / Steep downtrend: 50d MA -5.4% in 10 days"
-        ],
-        "regime": "RISK_ON",
-        "score": 62.1,
-        "score_breakdown": {
-          "depth": 25.0,
-          "volume_confirmed": false,
-          "days_since_low": 5,
-          "timing": 25.0,
-          "quality": 19.2,
-          "relative_strength_pct": -5.7,
-          "relative_strength": 2.9,
-          "trap_penalty": -10.0,
-          "total": 62.1
-        }
-      }
-    }
-  ],
+  "positions": [],
   "closed": [
     {
       "ticker": "LDOS",
@@ -533,6 +148,136 @@
       "pnl": -102.97441820410256,
       "pnl_pct": -10.297441820410258,
       "sell_reason": "\u05d4\u05d3\u05d9\u05e4 \u05dc\u05d0 \u05e0\u05d2\u05de\u05e8: \u05d4\u05de\u05e0\u05d9\u05d4 \u05d9\u05e8\u05d3\u05d4 -10.3% \u05de\u05d4\u05e7\u05e0\u05d9\u05d9\u05d4 \u05d5\u05d9\u05e6\u05e8\u05d4 \u05e9\u05e4\u05dc \u05d7\u05d3\u05e9 / \u05de\u05d2\u05de\u05ea \u05d9\u05e8\u05d9\u05d3\u05d4 \u05d7\u05d3\u05d4 \u2014 \u05d4\u05e1\u05d9\u05d2\u05e0\u05dc \u05e9\u05d1\u05d2\u05dc\u05dc\u05d5 \u05e7\u05e0\u05d9\u05e0\u05d5 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05e3. \u05e2\u05d3\u05d9\u05e3 \u05dc\u05e6\u05d0\u05ea \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05e4\u05e1\u05d3 \u05d2\u05d3\u05d5\u05dc \u05d9\u05d5\u05ea\u05e8. (Dip not over: down -10.3% from entry + fresh lows or steep downtrend \u2014 original buy signal is no longer valid)"
+    },
+    {
+      "ticker": "APP",
+      "name": "Applovin Corporation",
+      "entry_price": 312.6300048828125,
+      "entry_date": "2026-08-27",
+      "exit_price": NaN,
+      "exit_date": "2026-09-29",
+      "shares": 3.1986693035904983,
+      "cost_basis": 1000.0,
+      "pnl": NaN,
+      "pnl_pct": NaN,
+      "sell_reason": "\u05d4\u05d7\u05d5\u05d3\u05e9 \u05d4\u05e1\u05ea\u05d9\u05d9\u05dd \u2014 \u05e1\u05d2\u05d9\u05e8\u05ea \u05d4\u05e1\u05e4\u05e8\u05d9\u05dd / month ended \u2014 book closed"
+    },
+    {
+      "ticker": "RDDT",
+      "name": "Reddit, Inc.",
+      "entry_price": 153.9499969482422,
+      "entry_date": "2026-08-27",
+      "exit_price": NaN,
+      "exit_date": "2026-09-29",
+      "shares": 6.495615588327675,
+      "cost_basis": 1000.0,
+      "pnl": NaN,
+      "pnl_pct": NaN,
+      "sell_reason": "\u05d4\u05d7\u05d5\u05d3\u05e9 \u05d4\u05e1\u05ea\u05d9\u05d9\u05dd \u2014 \u05e1\u05d2\u05d9\u05e8\u05ea \u05d4\u05e1\u05e4\u05e8\u05d9\u05dd / month ended \u2014 book closed"
+    },
+    {
+      "ticker": "CHRW",
+      "name": "C.H. Robinson Worldwide, Inc.",
+      "entry_price": 150.10000610351562,
+      "entry_date": "2026-09-08",
+      "exit_price": NaN,
+      "exit_date": "2026-09-29",
+      "shares": 6.662224912305171,
+      "cost_basis": 1000.0,
+      "pnl": NaN,
+      "pnl_pct": NaN,
+      "sell_reason": "\u05d4\u05d7\u05d5\u05d3\u05e9 \u05d4\u05e1\u05ea\u05d9\u05d9\u05dd \u2014 \u05e1\u05d2\u05d9\u05e8\u05ea \u05d4\u05e1\u05e4\u05e8\u05d9\u05dd / month ended \u2014 book closed"
+    },
+    {
+      "ticker": "UHS",
+      "name": "Universal Health Services, Inc.",
+      "entry_price": 175.77999877929688,
+      "entry_date": "2026-09-09",
+      "exit_price": NaN,
+      "exit_date": "2026-09-29",
+      "shares": 5.688929383004289,
+      "cost_basis": 1000.0,
+      "pnl": NaN,
+      "pnl_pct": NaN,
+      "sell_reason": "\u05d4\u05d7\u05d5\u05d3\u05e9 \u05d4\u05e1\u05ea\u05d9\u05d9\u05dd \u2014 \u05e1\u05d2\u05d9\u05e8\u05ea \u05d4\u05e1\u05e4\u05e8\u05d9\u05dd / month ended \u2014 book closed"
+    },
+    {
+      "ticker": "NXPI",
+      "name": "NXP Semiconductors N.V.",
+      "entry_price": 223.32000732421875,
+      "entry_date": "2026-09-09",
+      "exit_price": NaN,
+      "exit_date": "2026-09-29",
+      "shares": 4.477879129513854,
+      "cost_basis": 1000.0,
+      "pnl": NaN,
+      "pnl_pct": NaN,
+      "sell_reason": "\u05d4\u05d7\u05d5\u05d3\u05e9 \u05d4\u05e1\u05ea\u05d9\u05d9\u05dd \u2014 \u05e1\u05d2\u05d9\u05e8\u05ea \u05d4\u05e1\u05e4\u05e8\u05d9\u05dd / month ended \u2014 book closed"
+    },
+    {
+      "ticker": "ADSK",
+      "name": "Autodesk, Inc.",
+      "entry_price": 212.39999389648438,
+      "entry_date": "2026-09-11",
+      "exit_price": NaN,
+      "exit_date": "2026-09-29",
+      "shares": 4.7080980637285785,
+      "cost_basis": 1000.0,
+      "pnl": NaN,
+      "pnl_pct": NaN,
+      "sell_reason": "\u05d4\u05d7\u05d5\u05d3\u05e9 \u05d4\u05e1\u05ea\u05d9\u05d9\u05dd \u2014 \u05e1\u05d2\u05d9\u05e8\u05ea \u05d4\u05e1\u05e4\u05e8\u05d9\u05dd / month ended \u2014 book closed"
+    },
+    {
+      "ticker": "SYK",
+      "name": "Stryker Corporation",
+      "entry_price": 284.760009765625,
+      "entry_date": "2026-09-16",
+      "exit_price": NaN,
+      "exit_date": "2026-09-29",
+      "shares": 3.511729055013945,
+      "cost_basis": 1000.0,
+      "pnl": NaN,
+      "pnl_pct": NaN,
+      "sell_reason": "\u05d4\u05d7\u05d5\u05d3\u05e9 \u05d4\u05e1\u05ea\u05d9\u05d9\u05dd \u2014 \u05e1\u05d2\u05d9\u05e8\u05ea \u05d4\u05e1\u05e4\u05e8\u05d9\u05dd / month ended \u2014 book closed"
+    },
+    {
+      "ticker": "IDXX",
+      "name": "IDEXX Laboratories, Inc.",
+      "entry_price": 513.6199951171875,
+      "entry_date": "2026-09-16",
+      "exit_price": NaN,
+      "exit_date": "2026-09-29",
+      "shares": 1.9469647005698056,
+      "cost_basis": 1000.0,
+      "pnl": NaN,
+      "pnl_pct": NaN,
+      "sell_reason": "\u05d4\u05d7\u05d5\u05d3\u05e9 \u05d4\u05e1\u05ea\u05d9\u05d9\u05dd \u2014 \u05e1\u05d2\u05d9\u05e8\u05ea \u05d4\u05e1\u05e4\u05e8\u05d9\u05dd / month ended \u2014 book closed"
+    },
+    {
+      "ticker": "ACN",
+      "name": "Accenture plc",
+      "entry_price": 190.2899932861328,
+      "entry_date": "2026-09-17",
+      "exit_price": NaN,
+      "exit_date": "2026-09-29",
+      "shares": 5.255137081729425,
+      "cost_basis": 1000.0,
+      "pnl": NaN,
+      "pnl_pct": NaN,
+      "sell_reason": "\u05d4\u05d7\u05d5\u05d3\u05e9 \u05d4\u05e1\u05ea\u05d9\u05d9\u05dd \u2014 \u05e1\u05d2\u05d9\u05e8\u05ea \u05d4\u05e1\u05e4\u05e8\u05d9\u05dd / month ended \u2014 book closed"
+    },
+    {
+      "ticker": "CDNS",
+      "name": "Cadence Design Systems, Inc.",
+      "entry_price": 302.95001220703125,
+      "entry_date": "2026-09-22",
+      "exit_price": NaN,
+      "exit_date": "2026-09-29",
+      "shares": 3.3008745987988797,
+      "cost_basis": 1000.0,
+      "pnl": NaN,
+      "pnl_pct": NaN,
+      "sell_reason": "\u05d4\u05d7\u05d5\u05d3\u05e9 \u05d4\u05e1\u05ea\u05d9\u05d9\u05dd \u2014 \u05e1\u05d2\u05d9\u05e8\u05ea \u05d4\u05e1\u05e4\u05e8\u05d9\u05dd / month ended \u2014 book closed"
     }
   ],
   "updates_sent": [
