@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from src.telegram import compose_alert, send_alert
+from src.telegram import compose_alert, compose_daily_summary, send_alert
 
 
 class TestComposeAlert:
@@ -264,3 +264,23 @@ def test_open_rows_not_mirrored_into_closed_are_still_shown():
                           1000.0, 1040.0, 0.0, book_size=10000.0)
     assert msg.count("BBB:") == 1
     assert msg.count("CCC:") == 1
+
+
+class TestComposeDailySummary:
+    def test_shows_funnel_watchlist_and_session_date(self):
+        msg = compose_daily_summary(
+            "RISK_ON", 503, 0, [],
+            funnel={"dip": 14, "stabilized": 2, "quality": 0},
+            watching=[("NKE", -41.2), ("ADBE", -33.0)],
+            data_date="2026-10-09",
+        )
+        assert "2026-10-09" in msg
+        assert "Deep dip: 14" in msg
+        assert "Stabilizing: 2" in msg
+        assert "Passed quality: 0" in msg
+        assert "NKE -41%" in msg and "ADBE -33%" in msg
+
+    def test_without_funnel_keeps_old_shape(self):
+        msg = compose_daily_summary("RISK_OFF", 503, 0, [])
+        assert "Funnel" not in msg
+        assert "Watching" not in msg

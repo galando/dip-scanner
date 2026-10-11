@@ -1,6 +1,8 @@
 """Market regime detection — SPY vs 200-day MA."""
 import logging
 
+import pandas as pd
+
 import src.data as data
 from src.indicators import compute_sma
 
@@ -29,6 +31,11 @@ def compute_regime() -> str:
 
     spy_close = spy_df["Close"].iloc[-1]
     sma_200 = compute_sma(spy_df, 200).iloc[-1]
+
+    if pd.isna(spy_close) or pd.isna(sma_200):
+        logger.error("SPY close or 200dma is NaN (close=%s, 200dma=%s), defaulting to RISK_OFF",
+                     spy_close, sma_200)
+        return RISK_OFF
 
     regime = RISK_ON if spy_close > sma_200 else RISK_OFF
     logger.info("Regime: %s (SPY close=%.2f, 200dma=%.2f)", regime, spy_close, sma_200)

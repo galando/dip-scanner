@@ -26,6 +26,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def _last_bar_date(spy_df, prices_map) -> str | None:
+    """Session date of the newest bar, e.g. "2026-10-09".
+
+    The cron often starts after midnight UTC, so the runner's clock already
+    shows the next day; the summary should name the session it scanned.
+    """
+    df = spy_df if spy_df is not None and len(spy_df) else next(iter(prices_map.values()), None)
+    if df is None or not len(df):
+        return None
+    return str(df.index[-1])[:10]
+
+
 def run_scan() -> list[str]:
     """Run the full dip scanner pipeline. Returns list of alerted tickers."""
     logger.info("=== Dip Scanner Run Starting ===")
@@ -70,6 +82,12 @@ def run_scan() -> list[str]:
     candidates: list[dict] = []
     deduped: list[str] = []
 
+    # How far each stock got, so a zero-alert day says WHERE the universe
+    # stopped instead of only "nothing found". The data-quality count doubles
+    # as a feed health check: a broken download rejects everything there.
+    funnel = {"data_bad": 0, "dip": 0, "stabilized": 0, "quality": 0, "candidates": 0}
+    watching: list[tuple[str, float]] = []  # deep dip, not yet stabilizing
+
     # --- Phase 1: collect every stock that passes all gates ---
     for ticker, prices_df in prices_map.items():
         try:
@@ -78,8 +96,16 @@ def run_scan() -> list[str]:
                 prices_df, regime, config
             )
             if not passed_2:
-                logger.debug("SKIP %s: %s", ticker, details_2.get("reason", "gate 2"))
+                reason = details_2.get("reason", "gate 2")
+                logger.debug("SKIP %s: %s", ticker, reason)
+                if reason.startswith("Data quality"):
+                    funnel["data_bad"] += 1
+                elif reason.startswith("Stabilization gate"):
+                    funnel["dip"] += 1
+                    watching.append((ticker, details_2.get("drawdown_pct", 0.0)))
                 continue
+            funnel["dip"] += 1
+            funnel["stabilized"] += 1
 
             # Dedup check before the expensive fundamentals fetch
             if state.is_recently_alerted(ticker, dedup_state, config.DEDUP_DAYS):
@@ -98,6 +124,7 @@ def run_scan() -> list[str]:
             if not passed_1:
                 logger.debug("SKIP %s: %s", ticker, details_1.get("reason", "quality gate"))
                 continue
+            funnel["quality"] += 1
 
             # Trap gate
             passed_3, details_3 = gates.gate_3_trap(fund, prices_df, config)
@@ -118,6 +145,7 @@ def run_scan() -> list[str]:
             all_details["score"] = score
             all_details["score_breakdown"] = breakdown
 
+            funnel["candidates"] += 1
             candidates.append({
                 "ticker": ticker,
                 "name": fund.get("shortName", ticker),
@@ -131,6 +159,22 @@ def run_scan() -> list[str]:
         except Exception as e:
             logger.error("Error processing %s: %s", ticker, e, exc_info=True)
             continue
+
+    logger.info(
+        "Funnel: %d scanned, %d bad data, %d deep dip, %d stabilized, "
+        "%d quality, %d candidates, %d deduped",
+        len(prices_map), funnel["data_bad"], funnel["dip"], funnel["stabilized"],
+        funnel["quality"], funnel["candidates"], len(deduped),
+    )
+    if funnel["data_bad"] > len(prices_map) // 2:
+        universe_note = "\n".join(filter(None, [
+            universe_note,
+            f"⚠️ בעיית נתונים: {funnel['data_bad']} מניות נפסלו בגלל מחירים חסרים או שגויים\n"
+            f"(Data problem: {funnel['data_bad']} stocks rejected for missing or bad prices)",
+        ]))
+        logger.error("Data problem: %d/%d tickers failed the data-quality check",
+                     funnel["data_bad"], len(prices_map))
+    watching.sort(key=lambda t: t[1])  # deepest drawdown first
 
     # --- Phase 2: rank best-first, cap per sector and per day, send ---
     selected, dropped = rank_candidates(candidates, config)
@@ -173,6 +217,9 @@ def run_scan() -> list[str]:
             summary = telegram.compose_daily_summary(
                 regime, len(prices_map), len(alerted), deduped,
                 universe_note=universe_note,
+                funnel=funnel,
+                watching=watching[:5],
+                data_date=_last_bar_date(spy_df, prices_map),
             )
             for cid in chat_ids:
                 telegram.send_alert(token, cid, summary)
