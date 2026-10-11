@@ -150,9 +150,20 @@ def compose_alert(ticker: str, name: str, price: float, details: dict) -> str:
 # ---------------------------------------------------------------------------
 
 def compose_daily_summary(regime: str, scanned: int, alerted: int,
-                          deduped: list[str], universe_note: str = "") -> str:
-    """Summary sent at the end of every scan day when no new alerts fire."""
-    today = date.today().strftime("%Y-%m-%d")
+                          deduped: list[str], universe_note: str = "",
+                          funnel: dict | None = None,
+                          watching: list[tuple[str, float]] | None = None,
+                          data_date: str | None = None) -> str:
+    """Summary sent at the end of every scan day when no new alerts fire.
+
+    funnel: stage counts from the scanner, so the reader sees where stocks
+        stopped ("12 deep dips, 0 stabilizing" reads very differently from
+        "0 deep dips").
+    watching: (ticker, drawdown %) pairs in a deep dip but not yet
+        stabilizing; tomorrow's likeliest alerts.
+    data_date: session date of the newest price bar; defaults to today.
+    """
+    today = data_date or date.today().strftime("%Y-%m-%d")
     regime_he, regime_en = _REGIME_LABELS.get(regime, (regime, regime))
 
     dedup_line = ""
@@ -164,13 +175,29 @@ def compose_daily_summary(regime: str, scanned: int, alerted: int,
 
     note_line = f"\n{universe_note}" if universe_note else ""
 
+    funnel_line = ""
+    if funnel:
+        funnel_line = (
+            f"\n\n🧮 סינון / Funnel:\n"
+            f"• ירידה עמוקה / Deep dip: {funnel.get('dip', 0)}\n"
+            f"• מתייצבות / Stabilizing: {funnel.get('stabilized', 0)}\n"
+            f"• עברו סינון איכות / Passed quality: {funnel.get('quality', 0)}"
+        )
+
+    watch_line = ""
+    if watching:
+        names = ", ".join(f"{t} {dd:.0f}%" for t, dd in watching)
+        watch_line = (
+            f"\n\n👀 במעקב, עדיין לא התייצבו / Watching, not yet stabilizing:\n{names}"
+        )
+
     return (
         f"📋 סיכום יומי / Daily Scan — {today}\n"
         f"\n"
         f"📈 מצב שוק / Market: {regime_he} / {regime_en}\n"
         f"🔍 נסרקו / Scanned: {scanned} מניות / stocks\n"
         f"🔔 התראות חדשות / New alerts: {alerted}"
-        f"{dedup_line}{note_line}\n"
+        f"{dedup_line}{note_line}{funnel_line}{watch_line}\n"
         f"\nלא נמצאו ירידות איכותיות חדשות היום.\n"
         f"(No new quality dips found today.)\n"
         f"\nℹ️ לא ייעוץ השקעות. (Not investment advice.)"

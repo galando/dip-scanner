@@ -9,6 +9,20 @@ import config
 logger = logging.getLogger(__name__)
 
 
+def _drop_empty_bars(df: pd.DataFrame) -> pd.DataFrame:
+    """Remove rows with no close price.
+
+    When the scan runs after 00:00 UTC (GitHub routinely starts the 20:30 cron
+    three to five hours late), yfinance appends a row for the new calendar day
+    before that session has traded, with every field NaN. Every gate reads
+    iloc[-1], so that one empty row made the latest close, drawdown, ATR and
+    vol figures NaN for all 503 stocks: Gate 2 rejected every one of them and
+    SPY's 200-day comparison fell back to RISK_OFF. Multi-ticker downloads
+    also pad a ticker with NaN rows on dates only other tickers traded.
+    """
+    return df.dropna(subset=["Close"])
+
+
 def fetch_prices(tickers: list[str], period: str = None) -> dict[str, pd.DataFrame]:
     """Batch-download OHLCV price history via yf.download.
 
@@ -36,7 +50,8 @@ def fetch_prices(tickers: list[str], period: str = None) -> dict[str, pd.DataFra
         ticker = tickers[0]
         if not raw.empty and not raw.isna().all().all():
             df = raw[ticker] if isinstance(raw.columns, pd.MultiIndex) else raw
-            if not df.empty and not df["Close"].isna().all():
+            df = _drop_empty_bars(df)
+            if not df.empty:
                 result[ticker] = df
         return result
 
@@ -45,8 +60,8 @@ def fetch_prices(tickers: list[str], period: str = None) -> dict[str, pd.DataFra
         try:
             if ticker not in raw.columns.get_level_values(0):
                 continue
-            df = raw[ticker].copy()
-            if df.empty or df["Close"].isna().all():
+            df = _drop_empty_bars(raw[ticker].copy())
+            if df.empty:
                 continue
             result[ticker] = df
         except Exception as e:

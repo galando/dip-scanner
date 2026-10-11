@@ -94,6 +94,12 @@ def gate_2_dip_and_stabilization(
     In RISK_OFF: require STABILIZATION_REQUIRED_RISK_OFF signals.
     """
     # --- Gate 2-pre: data quality ---
+    # A missing latest close makes every indicator below NaN, and NaN fails
+    # every comparison, so the stock would be dropped with a misleading
+    # "insufficient drop" reason. Say what actually happened instead.
+    if len(prices) == 0 or pd.isna(prices["Close"].iloc[-1]):
+        return False, {"reason": "Data quality: latest close is missing (NaN)"}
+
     # A single-day close-to-close change beyond the threshold means the price
     # series is corrupted. Reject early so no misleading alert is ever sent.
     if len(prices) >= 2:

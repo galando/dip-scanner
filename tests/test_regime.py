@@ -32,6 +32,15 @@ class TestComputeRegime:
         assert regime == RISK_ON
 
     @patch("src.regime.data")
+    def test_nan_last_close_defaults_to_risk_off(self, mock_data):
+        """A NaN close cannot be compared to the 200dma; fall back explicitly."""
+        spy_df = _make_spy_df([440 + i * 0.1 for i in range(250)])
+        spy_df.iloc[-1, spy_df.columns.get_loc("Close")] = np.nan
+        mock_data.fetch_prices.return_value = {"SPY": spy_df}
+
+        assert compute_regime() == RISK_OFF
+
+    @patch("src.regime.data")
     def test_spy_below_200dma_risk_off(self, mock_data):
         """SPY close below 200dma returns RISK_OFF."""
         # Start high, then drop steeply so last close is below 200dma

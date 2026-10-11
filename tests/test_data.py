@@ -48,6 +48,31 @@ class TestFetchPrices:
         assert len(result) == 0
 
     @patch("src.data.yf")
+    def test_trailing_empty_bar_is_dropped(self, mock_yf):
+        """A run after 00:00 UTC gets an all-NaN row for the untraded new day.
+
+        Left in, it made iloc[-1] NaN for every ticker and rejected all 503.
+        """
+        dates = pd.bdate_range("2024-01-01", periods=4)
+        frames = {
+            t: pd.DataFrame({
+                "Close": [10.0, 11.0, 12.0, np.nan],
+                "High": [10.5, 11.5, 12.5, np.nan],
+                "Low": [9.5, 10.5, 11.5, np.nan],
+                "Open": [10.0, 11.0, 12.0, np.nan],
+                "Volume": [1e6, 1e6, 1e6, np.nan],
+            }, index=dates)
+            for t in ("AAPL", "MSFT")
+        }
+        mock_yf.download.return_value = pd.concat(frames.values(), axis=1, keys=frames.keys())
+
+        for tickers in (["AAPL", "MSFT"], ["AAPL"]):
+            result = fetch_prices(tickers)
+            for t in tickers:
+                assert len(result[t]) == 3
+                assert result[t]["Close"].iloc[-1] == 12.0
+
+    @patch("src.data.yf")
     def test_batch_download_exception_returns_empty(self, mock_yf):
         """Exception during download is caught, returns empty dict."""
         mock_yf.download.side_effect = Exception("network error")

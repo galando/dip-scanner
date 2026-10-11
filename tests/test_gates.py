@@ -140,6 +140,17 @@ class TestGate2DipAndStabilization:
         )
         assert passed is True
 
+    def test_rejected_missing_latest_close_says_so(self):
+        """A NaN last bar is reported as a data problem, not as 'no dip'."""
+        prices_df = self._make_dipping_stock(drawdown_pct=40)
+        empty = pd.DataFrame({c: [np.nan] for c in prices_df.columns},
+                             index=[prices_df.index[-1] + pd.Timedelta(days=1)])
+        passed, details = gate_2_dip_and_stabilization(
+            pd.concat([prices_df, empty]), regime="RISK_ON", cfg=config
+        )
+        assert passed is False
+        assert details["reason"].startswith("Data quality")
+
     def test_rejected_no_stabilization(self):
         """Scenario 3: Dip without stabilization is rejected (falling knife)."""
         prices_df = self._make_dipping_stock(drawdown_pct=40, rsi_turning_up=False)
