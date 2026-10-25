@@ -34,6 +34,14 @@ Add:
 
 Code reads these via `os.environ` -- never hardcode them.
 
+### 4. Optional: SEC data
+
+Add one more secret, `SEC_USER_AGENT`, with your name and an email address
+(for example `Jane Doe jane@example.com`). SEC asks automated tools to identify
+themselves this way and refuses requests that do not. With it the scanner reads
+companies' own filings (see *SEC Data* below); without it nothing changes.
+Then run `Actions > Checks > Run workflow` to see what both sources return.
+
 ---
 
 ## How to Run
@@ -62,9 +70,50 @@ Every stock must pass all four gates:
 | Gate | Purpose | Key Metrics |
 |------|---------|-------------|
 | **Gate 0: Regime** | Is the market healthy? | SPY vs 200-day MA |
-| **Gate 1: Quality** | Is this a company worth catching? | ROE > 12%, positive op margin, debt/eq < 150, mkt cap > $10B |
+| **Gate 1: Quality** | Is this a company worth catching? | ROE > 12%, positive op margin, debt/eq < 150, mkt cap > $10B (from SEC filings when configured) |
 | **Gate 2: Dip + Stabilization** | Has it fallen hard AND stopped falling? | Drawdown >= 25%, vol-adjusted drop, RSI turning up or higher low |
-| **Gate 3: Trap** | Is the thesis broken? | Fresh lows, gap-down on volume, earnings blackout, negative growth |
+| **Gate 3: Trap** | Is the thesis broken? | Fresh lows, gap-down on volume, earnings blackout, negative growth, 8-K filings (SEC) |
+
+The earnings blackout reads the next report date from Yahoo's earnings
+calendar (`Ticker.calendar`). Before October 2026 it read a field yfinance
+never provides, so it never fired; tests passed only because they supplied the
+field themselves.
+
+---
+
+## SEC Data (optional)
+
+With `SEC_USER_AGENT` set (Setup, step 4), `src/sec.py` reads two things from
+SEC EDGAR for every stock that reaches the quality gate:
+
+- **8-K filings (Gate 3).** A filing within 90 days with item 1.03
+  (bankruptcy), 2.04 (debt acceleration), 3.01 (delisting notice) or 4.02
+  (past financials no longer reliable) rejects the stock outright, whatever
+  `TRAP_BEHAVIOR` says. Item 2.06 (impairment) or 5.02 (director or officer
+  change) within 30 days adds a warning to the alert and costs 5 score points.
+  The item lists and windows are in `config.py`.
+- **Fundamentals (Gate 1).** ROE, operating margin, debt/equity and market cap
+  are computed from the company's 10-Q and 10-K figures (trailing twelve
+  months of income over the latest balance sheet), replacing Yahoo's. A field
+  the filings cannot support keeps Yahoo's value, and the alert's data says
+  which source each field came from. `QUALITY_SOURCE = "yahoo"` turns this
+  part off and keeps only the 8-K check.
+
+Why replace Yahoo's numbers at all: the backtest can only rebuild fundamentals
+from filings (Yahoo has no history), so a live gate on Yahoo's figures and a
+backtest on SEC's would be testing two different gates. Expect some stocks to
+change sides: the two sources define ROE and debt differently (leases are not
+debt here). `python -m src.datacheck AAPL JPM ...` prints both side by side.
+
+Behaviour to know about:
+
+- A company whose filed equity is zero or negative (heavy buybacks) fails
+  Gate 1 with that reason: ROE and debt/equity have no meaning for it.
+- Banks and insurers file no operating income line; pre-tax income stands in.
+- SEC trouble never costs a stock: any failure falls back to Yahoo, and a 403
+  (a User-Agent SEC rejects) switches SEC off for the rest of the run with
+  one log line.
+
 
 ---
 
@@ -109,10 +158,20 @@ PYTHONPATH=. python -m src.backtest --period 5y --max-tickers 100
 Or in GitHub: `Actions > Backtest > Run workflow` (choose period, universe
 size, and whether to send the report to Telegram).
 
-Honest limitation: Gate 1 (quality) can't be replayed — yfinance has no
-point-in-time fundamentals — so backtest results are a lower bound on
-selectivity. If the numbers don't beat "buy SPY on the same dates," the system
-has no edge; believe the numbers, not the design.
+Gate 1 (quality) and the 8-K trap need fundamentals as they stood on each
+signal date, which yfinance cannot give. With `SEC_USER_AGENT` set the backtest
+rebuilds them from SEC filings, counting **only what was filed before the
+signal session** (a later restatement never leaks backwards, and a filing made
+on the signal day waits a session, since it may have come after the close the
+backtest buys at). It then runs the live rule a third time without them, on the
+same tickers, so the report says what the quality and 8-K checks add, and how
+many dips each of them stopped. Tickers SEC has no data for are left out of
+every row rather than mixed in unfiltered. `--no-sec` replays the price gates
+only, which without SEC access is all it can do: the live scanner is then
+stricter than the backtest. Either way, the universe is today's S&P 500, so
+companies that fell out of the index are missing, and those include the worst
+falling knives. If the numbers don't beat "buy SPY on the same dates," the
+system has no edge; believe the numbers, not the design.
 
 ---
 
@@ -363,6 +422,35 @@ What the rolling windows **rejected**:
 That a change can survive a 720-combination grid over two months and still fail
 out of sample is the whole argument for the rolling check.
 
+### Stops sized to volatility, and positions sized to risk
+
+The entry gate measures each dip against the stock's own volatility, but the
+exit used one flat 12% stop and one flat $1,000 slot for every stock. Two
+options test the obvious alternative: `SIM_STOP_MODE = "atr"` fixes the stop at
+entry, `SIM_STOP_ATR_MULT` x ATR(14) below the price, and `SIM_SIZING = "risk"`
+buys only as many shares as keep the loss at the stop to `SIM_RISK_PER_TRADE_PCT` of the
+slot (never more than the slot; the rest stays cash).
+
+```bash
+PYTHONPATH=. python -m src.tune stops
+```
+
+On the current cache (8 rolling windows, 2 independent; full output in
+`reports/atr-stops.txt`):
+
+| | mean | worst | trades | vs current, 95% interval |
+|---|---|---|---|---|
+| current: 12% stop, full slot | +5.55% | −0.10% | 132 | |
+| ATR stop x3 (x4 is identical) | +5.83% | −0.10% | 132 | +0.28 [+0.00, +0.83] |
+| ATR stop x3 + risk sizing | +4.88% | +0.02% | 132 | −0.67 [−1.20, −0.03] |
+
+Neither is adopted. The ATR row looks better, but x3 and x4 give identical
+books, which means neither stop ever fired: the gain is the 12% stop not
+firing either, i.e. "a wider stop", not evidence for ATR. Risk sizing lowers
+the mean because it leaves part of each slot in cash, and buys a slightly
+better worst window with it, a trade, not an improvement. Both rows rest on two
+independent windows, and the intervals resample overlapping ones.
+
 ### Checking a result away from where it was fitted
 
 `src/validate.py` re-tests a candidate on windows it was not chosen on:
@@ -422,8 +510,14 @@ All thresholds live in `config.py`. Key knobs:
 | `SUPPRESS_IN_RISK_OFF` | False | Skip all alerts when SPY below 200dma |
 | `STABILIZATION_REQUIRED_RISK_OFF` | 2 | Stabilization signals required in RISK_OFF |
 | `EARNINGS_BLACKOUT_DAYS` | 5 | Flag if earnings within N days |
+| `SUPPRESS_ON_EARNINGS` | False | Skip a stock inside the blackout instead of warning |
+| `QUALITY_SOURCE` | "sec" | Gate 1 inputs from SEC filings when configured; "yahoo" = Yahoo only |
+| `SEC_8K_HARD_ITEMS` | 1.03, 2.04, 3.01, 4.02 | 8-K items that reject a stock (within 90 days) |
+| `SEC_8K_SOFT_ITEMS` | 2.06, 5.02 | 8-K items that warn (within 30 days) |
 | `SIM_DURATION_DAYS` | 30 | Simulation run length — a full month from day one |
 | `SIM_MIN_HOLD_SESSIONS` | 10 | Sessions before the bounce-done exit may fire |
+| `SIM_STOP_MODE` | "pct" | "atr" = stop at `SIM_STOP_ATR_MULT` x ATR below entry (measured, not adopted) |
+| `SIM_SIZING` | "fixed" | "risk" = size so the loss at the stop is `SIM_RISK_PER_TRADE_PCT` of a slot |
 
 ---
 
@@ -438,6 +532,9 @@ GitHub Actions (daily cron, after US close)
         +--> universe.py   : S&P 500 list (Wikipedia -> cached copy -> full
         |                    static fallback; partial lists are never trusted)
         +--> data.py       : price history + fundamentals via yfinance
+        |                    (+ earnings date from Ticker.calendar)
+        +--> sec.py        : 8-K events + point-in-time fundamentals from
+        |                    SEC EDGAR (only with SEC_USER_AGENT)
         +--> regime.py     : SPY vs 200dma (RISK_ON / RISK_OFF)
         +--> indicators.py : RSI, ATR, MAs, drawdown, stabilization, volume
         |                    confirmation, relative strength, days-since-low
@@ -458,6 +555,7 @@ GitHub Actions (daily cron, after US close)
 
    tune.py     (on demand): measure the exit rules, sweep their thresholds
    validate.py (on demand): re-test a candidate away from where it was fitted
+   datacheck.py (on demand, and on every PR): what Yahoo and SEC return today
    cachebuild.py           : fill data/prices from the live feed
 ```
 

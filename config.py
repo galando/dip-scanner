@@ -29,6 +29,7 @@ STABILIZATION_REQUIRED_RISK_OFF = 2  # Number of stabilization signals required 
 # --- Gate 3: Trap detection ---
 TRAP_BEHAVIOR = "warn"      # "warn" = alert with warning, "suppress" = skip
 EARNINGS_BLACKOUT_DAYS = 5  # Flag if earnings within N days
+SUPPRESS_ON_EARNINGS = False  # True = skip a stock whose earnings fall inside the blackout, instead of warning
 FRESH_LOW_DAYS = 20         # N-day low window for fresh-low trap
 STEEP_DOWNTREND_PCT = 3.0   # 50-day MA declining > X% from 10 days ago
 GAP_DOWN_PCT = 5.0          # Gap-down > X% threshold
@@ -46,6 +47,20 @@ VOLUME_CONFIRM_MULT = 1.2   # Recent volume must exceed X * average volume
 VOLUME_CONFIRM_AVG_WINDOW = 20  # Sessions in the average-volume baseline
 FRESH_BOUNCE_MAX_DAYS = 7   # Bounce off the low within N sessions scores as "fresh"
 
+# --- SEC EDGAR (src/sec.py) ---
+# Everything here needs SEC_USER_AGENT in the environment ("Your Name
+# you@example.com"): SEC asks automated tools to identify themselves. Without
+# it no SEC request is made and the scanner runs on Yahoo alone, as before.
+QUALITY_SOURCE = "sec"      # Gate 1 inputs: "sec" = computed from the filings, the same way
+                            # the backtest computes them (Yahoo fills any field SEC lacks);
+                            # "yahoo" = Yahoo only, as before SEC support
+SEC_8K_HARD_ITEMS = ("1.03", "2.04", "3.01", "4.02")  # Reject: bankruptcy, debt acceleration,
+                                                      # delisting notice, past financials unreliable
+SEC_8K_SOFT_ITEMS = ("2.06", "5.02")  # Warn + score penalty: impairment, director/officer change
+SEC_8K_HARD_LOOKBACK_DAYS = 90  # A hard item filed within N days rejects the stock
+SEC_8K_SOFT_LOOKBACK_DAYS = 30  # A soft item filed within N days warns
+SEC_MAX_STALENESS_DAYS = 200    # Latest filed quarter older than this = SEC figures treated as missing
+
 # --- State / dedup ---
 DEDUP_DAYS = 10             # Don't re-alert same ticker within N days
 
@@ -55,9 +70,10 @@ PRICE_HISTORY_PERIOD = "1y" # yfinance download period
 
 # --- Historical backtest (src/backtest.py) ---
 # Replays the price-based gates (2a dip, 2b stabilization, price traps) over
-# history and measures forward returns vs SPY. Quality (Gate 1) cannot be
-# replayed — yfinance has no point-in-time fundamentals — so backtest results
-# are a lower bound on selectivity, not an exact replay.
+# history and measures forward returns vs SPY. yfinance has no point-in-time
+# fundamentals, so Gate 1 (quality) and the 8-K trap are replayed only when
+# SEC access is configured: they are then rebuilt from what each company had
+# filed before every signal date.
 BACKTEST_PERIOD = "5y"          # yfinance history period to replay
 BACKTEST_STEP_DAYS = 5          # Evaluate gates every N trading days
 BACKTEST_MIN_HISTORY = 252      # Sessions of history required before first signal
@@ -121,3 +137,15 @@ SIM_MIN_HOLD_SESSIONS = 10           # ...but not before N sessions have passed.
                                      # holding periods this cache cannot see.
                                      # See src/tune.py, src/validate.py, README.
 SIM_THESIS_BREAK_MIN_LOSS_PCT = 5.0  # Thesis breaking only triggers if also down >= X% from entry
+
+# Volatility-scaled stop and risk-based sizing. Both are OFF: they are options
+# to measure with `python -m src.tune stops`, not settings the data has picked.
+# The defaults reproduce the current book exactly (a 12% risk budget on a
+# 12% stop sizes every position at the full SIM_CASH_PER_STOCK).
+SIM_STOP_MODE = "pct"                # "pct" = SIM_STOP_LOSS_PCT below entry; "atr" = a stop
+                                     # SIM_STOP_ATR_MULT x ATR(14) below entry, fixed at entry
+SIM_STOP_ATR_MULT = 3.0
+SIM_SIZING = "fixed"                 # "fixed" = SIM_CASH_PER_STOCK per position; "risk" = size so the
+                                     # loss at the stop is SIM_RISK_PER_TRADE_PCT of the slot, never
+                                     # more than the slot's cash
+SIM_RISK_PER_TRADE_PCT = 12.0        # Loss at the stop, as % of one slot's cash

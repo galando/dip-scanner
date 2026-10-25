@@ -22,13 +22,15 @@ import logging
 import os
 from datetime import date, datetime, timedelta, timezone
 
+import pandas as pd
+
 import config
 import src.universe as universe
 import src.data as data
 import src.regime as regime_mod
 import src.gates as gates
 import src.telegram as telegram
-from src.indicators import compute_rsi, compute_drawdown_from_52w_high
+from src.indicators import compute_atr, compute_rsi, compute_drawdown_from_52w_high
 from src.score import score_candidate
 
 logging.basicConfig(
@@ -107,7 +109,7 @@ def scan_candidates(regime: str, prices_map: dict, cfg, exclude: set) -> list[di
             passed_2, details_2 = gates.gate_2_dip_and_stabilization(prices_df, regime, cfg)
             if not passed_2:
                 continue
-            fund = data.fetch_fundamentals(ticker)
+            fund = data.fetch_fundamentals(ticker, price=float(prices_df["Close"].iloc[-1]))
             if fund is None:
                 continue
             passed_1, details_1 = gates.gate_1_quality(fund, cfg)
@@ -136,13 +138,59 @@ def scan_candidates(regime: str, prices_map: dict, cfg, exclude: set) -> list[di
     return candidates
 
 
+def plan_entry(price: float, prices_df, cash_per_stock: float, cfg) -> dict:
+    """Shares, cost basis and, with an ATR stop, the stop price of a new position.
+
+    With the defaults (SIM_STOP_MODE "pct", SIM_SIZING "fixed") this is the
+    book as it always was: one full slot of cash, no stored stop.
+
+    SIM_STOP_MODE "atr" fixes the stop at entry, SIM_STOP_ATR_MULT x ATR(14)
+    below the price, so a calm stock gets a tight stop and a wild one a wide
+    stop, the way Gate 2 already measures the dip against each stock's own
+    volatility. SIM_SIZING "risk" then sizes the position so that the loss at
+    the stop is SIM_RISK_PER_TRADE_PCT of the slot, never spending more than
+    the slot: a wide stop buys fewer shares, and the rest of the slot stays cash.
+    """
+    stop_price = None
+    if getattr(cfg, "SIM_STOP_MODE", "pct") == "atr" and prices_df is not None and len(prices_df):
+        atr = compute_atr(prices_df).iloc[-1]
+        if pd.notna(atr) and atr > 0 and price - cfg.SIM_STOP_ATR_MULT * atr > 0:
+            stop_price = float(price - cfg.SIM_STOP_ATR_MULT * atr)
+
+    cost = cash_per_stock
+    if getattr(cfg, "SIM_SIZING", "fixed") == "risk":
+        # The percent stop's distance is taken from config rather than rebuilt
+        # from the price, so equal percentages give a scale of exactly 1.
+        if stop_price is not None:
+            risk_fraction = (price - stop_price) / price
+        else:
+            risk_fraction = cfg.SIM_STOP_LOSS_PCT / 100.0
+        if risk_fraction > 0:
+            scale = (cfg.SIM_RISK_PER_TRADE_PCT / 100.0) / risk_fraction
+            cost = cash_per_stock * min(1.0, scale)
+
+    plan = {"shares": cost / price, "cost_basis": cost}
+    if stop_price is not None:
+        plan["stop_price"] = stop_price
+    return plan
+
+
 def evaluate_exit(pos: dict, prices_df, cfg) -> tuple[bool, str, float]:
     """Decide whether to sell an open position. Returns (sell?, reason, current_price)."""
     current_price = float(prices_df["Close"].iloc[-1])
     pnl_pct = (current_price / pos["entry_price"] - 1.0) * 100.0
 
-    # 1) Stop-loss — the dip kept falling; the thesis failed.
-    if pnl_pct <= -cfg.SIM_STOP_LOSS_PCT:
+    # 1) Stop-loss — the dip kept falling; the thesis failed. A position
+    # opened with an ATR stop carries its own stop price; every other position
+    # (including those in a state file written before ATR stops existed) uses
+    # the fixed percentage.
+    stop_price = pos.get("stop_price")
+    if stop_price is not None:
+        if current_price <= stop_price:
+            return True, (f"סטופ-לוס: ירדה {pnl_pct:.1f}% מהקנייה, מתחת ל-{stop_price:.2f} / "
+                          f"stop-loss (ATR), down {pnl_pct:.1f}% from entry, below "
+                          f"{stop_price:.2f}"), current_price
+    elif pnl_pct <= -cfg.SIM_STOP_LOSS_PCT:
         return True, (f"סטופ-לוס: ירדה {pnl_pct:.1f}% מהקנייה / stop-loss, "
                       f"down {pnl_pct:.1f}% from entry"), current_price
 
@@ -233,14 +281,12 @@ def initialize(today: date, regime: str, prices_map: dict, cfg, state_path: str)
 
     positions = []
     for c in candidates:
-        shares = cfg.SIM_CASH_PER_STOCK / c["price"]
         positions.append({
             "ticker": c["ticker"],
             "name": c["name"],
             "entry_price": c["price"],
             "entry_date": start.isoformat(),
-            "shares": shares,
-            "cost_basis": cfg.SIM_CASH_PER_STOCK,
+            **plan_entry(c["price"], prices_map.get(c["ticker"]), cfg.SIM_CASH_PER_STOCK, cfg),
             "entry_reason": c["details"],
         })
 
@@ -339,11 +385,10 @@ def run(today: date = None, cfg=config, state_path: str = None) -> dict:
     if not is_final and free > 0:
         exclude = {p["ticker"] for p in state["positions"]} | {s["ticker"] for s in sells}
         for c in scan_candidates(regime, prices_map, cfg, exclude)[:free]:
-            shares = cash_per_stock / c["price"]
             pos = {
                 "ticker": c["ticker"], "name": c["name"],
                 "entry_price": c["price"], "entry_date": today.isoformat(),
-                "shares": shares, "cost_basis": cash_per_stock,
+                **plan_entry(c["price"], prices_map.get(c["ticker"]), cash_per_stock, cfg),
                 "entry_reason": c["details"],
             }
             state["positions"].append(pos)

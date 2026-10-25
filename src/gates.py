@@ -3,11 +3,12 @@
 Each gate returns (passed: bool, details: dict).
 """
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 
 import pandas as pd
 import numpy as np
 
+import src.sec as sec
 from src.indicators import (
     compute_rsi,
     compute_atr,
@@ -24,6 +25,18 @@ from src.indicators import (
 logger = logging.getLogger(__name__)
 
 
+def _as_of(prices: pd.DataFrame) -> date:
+    """The session the price history ends on; today when the frame has no dates.
+
+    Gate 3's date checks measure from here rather than from the clock, so the
+    live scan and a backtest window ask the same question: as of the session
+    being scored, is earnings close, and what has the company filed?
+    """
+    if isinstance(prices.index, pd.DatetimeIndex) and len(prices.index):
+        return prices.index[-1].date()
+    return datetime.now(timezone.utc).date()
+
+
 def gate_0_regime(regime: str) -> tuple[bool, dict]:
     """Gate 0: Market regime. Always passes; returns regime for downstream use."""
     return True, {"regime": regime}
@@ -36,6 +49,12 @@ def gate_1_quality(fundamentals: dict, cfg) -> tuple[bool, dict]:
     debt/equity < MAX_DEBT_EQUITY, market cap > MIN_MKT_CAP.
     """
     reasons = []
+
+    # SEC data says equity is zero or negative: ROE and debt/equity have no
+    # meaning, so the gate cannot be passed (rather than "missing ROE").
+    if fundamentals.get("negativeEquity"):
+        return False, {"reason": "Quality gate: shareholder equity is zero or negative "
+                                 "(ROE and debt/equity undefined)"}
 
     # Check for missing critical fields
     required_fields = {
@@ -52,7 +71,11 @@ def gate_1_quality(fundamentals: dict, cfg) -> tuple[bool, dict]:
 
     roe = fundamentals.get("returnOnEquity", 0) or 0
     op_margin = fundamentals.get("operatingMargins", 0) or 0
-    debt_eq = fundamentals.get("debtToEquity") or float("inf")
+    # Missing debt/equity fails the gate; a debt-free company's 0 must not.
+    # (`or float("inf")` turned 0 into infinity.)
+    debt_eq = fundamentals.get("debtToEquity")
+    if debt_eq is None:
+        debt_eq = float("inf")
     mkt_cap = fundamentals.get("marketCap", 0) or 0
 
     if roe * 100 < cfg.MIN_ROE:
@@ -187,8 +210,10 @@ def gate_3_trap(
 ) -> tuple[bool, dict]:
     """Gate 3: Trap vs. opportunity detection.
 
-    Checks: fundamental soft flags, price-based traps, earnings blackout.
+    Checks: fundamental soft flags, price-based traps, earnings blackout,
+    SEC 8-K events (fundamentals["secFilings"], when SEC access is configured).
     trap_behavior: "warn" (pass with warning) or "suppress" (reject).
+    A hard 8-K event (SEC_8K_HARD_ITEMS) rejects in either mode.
     """
     trap_behavior = trap_behavior or cfg.TRAP_BEHAVIOR
     warnings = []
@@ -233,17 +258,31 @@ def gate_3_trap(
                     warnings.append(f"צניחה חדה של {gap:.1f}% עם נפח מסחר גבוה פי {volumes[i] / avg_vol:.1f} / Gap-down {gap:.1f}% on {volumes[i] / avg_vol:.1f}x volume")
 
     # --- Earnings blackout ---
+    # Counted in whole days from the scored session, not from the clock: the
+    # cron often starts after midnight UTC, and a datetime difference then
+    # read a report two days out as one.
+    as_of = _as_of(prices)
     earnings_date_str = fundamentals.get("nextEarningsDate")
     if earnings_date_str:
         try:
-            earnings_date = datetime.strptime(earnings_date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            days_to_earnings = (earnings_date - datetime.now(timezone.utc)).days
+            earnings_date = date.fromisoformat(str(earnings_date_str)[:10])
+            days_to_earnings = (earnings_date - as_of).days
             if 0 <= days_to_earnings <= cfg.EARNINGS_BLACKOUT_DAYS:
                 warnings.append(f"דוח רבעוני עוד {days_to_earnings} ימים — יכול להיות תנודתי / Earnings in {days_to_earnings} days")
-                if fundamentals.get("suppressOnEarnings") and trap_behavior == "suppress":
+                if getattr(cfg, "SUPPRESS_ON_EARNINGS", False):
                     return False, {"warnings": warnings, "reason": "Earnings blackout suppressed"}
         except (ValueError, TypeError):
             pass
+
+    # --- SEC 8-K events ---
+    # The caller decides which filings are visible (all of them live; only
+    # those filed before the session in a backtest); this decides which matter.
+    hard, soft = sec.filing_flags(fundamentals.get("secFilings") or [], as_of, cfg)
+    warnings.extend(sec.describe(event) for event in soft)
+    if hard:
+        warnings.extend(sec.describe(event) for event in hard)
+        items = ", ".join(f"{e['item']} ({e['date']})" for e in hard)
+        return False, {"warnings": warnings, "reason": f"SEC 8-K: {items}"}
 
     # --- Decision ---
     price_traps = [w for w in warnings if any(k in w for k in ["צניחה", "שפל", "מגמת"])]

@@ -6,6 +6,7 @@ from datetime import date
 from unittest.mock import patch
 
 import pandas as pd
+import pytest
 
 import config
 import src.simulate as simulate
@@ -285,3 +286,59 @@ def test_an_in_flight_run_keeps_the_book_it_opened_with(tmp_path, monkeypatch):
     out = simulate.run(date(2026, 6, 10), cfg=cfg, state_path=str(path))
     assert simulate.book_size(out) == 10000.0    # not 30000
     assert out["max_positions"] == 10
+
+
+# --------------------------------------------------------------------------- #
+# Optional ATR stop and risk-based sizing (both off by default)
+# --------------------------------------------------------------------------- #
+def _bars(closes, spread):
+    """Daily bars whose true range is `spread` every day (ATR converges to it)."""
+    idx = pd.bdate_range("2026-01-02", periods=len(closes))
+    c = pd.Series(closes, index=idx, dtype=float)
+    return pd.DataFrame({"Open": c, "High": c + spread / 2, "Low": c - spread / 2,
+                         "Close": c, "Volume": 1000}, index=idx)
+
+
+def test_default_plan_is_the_book_as_it_always_was():
+    plan = simulate.plan_entry(50.0, _bars([50.0] * 40, 2.0), 1000.0, config)
+    assert plan == {"shares": 20.0, "cost_basis": 1000.0}
+
+
+def test_risk_sizing_on_the_percent_stop_changes_nothing():
+    """The default risk budget (12% of the slot) on the default 12% stop is a full slot."""
+    cfg = _cfg_with(SIM_SIZING="risk")
+    assert simulate.plan_entry(50.0, None, 1000.0, cfg) == {"shares": 20.0, "cost_basis": 1000.0}
+
+
+def test_atr_stop_is_fixed_at_entry():
+    cfg = _cfg_with(SIM_STOP_MODE="atr", SIM_STOP_ATR_MULT=3.0)
+    plan = simulate.plan_entry(100.0, _bars([100.0] * 60, 2.0), 1000.0, cfg)
+    assert plan["stop_price"] == pytest.approx(94.0, abs=0.05)     # 100 - 3 x ~2.0
+    assert plan["cost_basis"] == 1000.0                             # fixed sizing
+
+
+def test_risk_sizing_buys_less_when_the_stop_is_wide():
+    cfg = _cfg_with(SIM_STOP_MODE="atr", SIM_STOP_ATR_MULT=3.0, SIM_SIZING="risk",
+                    SIM_RISK_PER_TRADE_PCT=12.0)
+    wide = simulate.plan_entry(100.0, _bars([100.0] * 60, 8.0), 1000.0, cfg)   # stop ~24% away
+    assert wide["cost_basis"] == pytest.approx(120.0 / 0.24, rel=0.01)
+    assert (wide["cost_basis"] / 100.0) * (100.0 - wide["stop_price"]) == pytest.approx(120.0, rel=0.01)
+    tight = simulate.plan_entry(100.0, _bars([100.0] * 60, 1.0), 1000.0, cfg)  # stop ~3% away
+    assert tight["cost_basis"] == 1000.0                                       # never above the slot
+
+
+def test_a_stored_stop_replaces_the_percent_stop():
+    pos = {"ticker": "AAA", "entry_price": 100.0, "shares": 10.0, "cost_basis": 1000.0,
+           "entry_date": "2026-01-02", "stop_price": 80.0}
+    down_15 = _bars([100.0] * 30 + [85.0], 1.0)
+    sell, reason, _ = simulate.evaluate_exit(pos, down_15, config)
+    assert not (sell and "stop-loss" in reason)       # -15% is above an 80.00 stop
+
+    sell, reason, price = simulate.evaluate_exit(pos, _bars([100.0] * 30 + [79.5], 1.0), config)
+    assert sell is True and "stop-loss (ATR)" in reason and price == 79.5
+
+
+def test_atr_with_too_little_history_falls_back_to_no_stored_stop():
+    cfg = _cfg_with(SIM_STOP_MODE="atr")
+    plan = simulate.plan_entry(100.0, _bars([100.0] * 5, 2.0), 1000.0, cfg)   # ATR needs 14 bars
+    assert "stop_price" not in plan

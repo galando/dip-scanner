@@ -42,6 +42,13 @@ def _make_fundamentals(
     }
 
 
+def _cfg(**overrides):
+    """The config module with some settings replaced."""
+    import types
+    base = {k: getattr(config, k) for k in dir(config) if k.isupper()}
+    return types.SimpleNamespace(**{**base, **overrides})
+
+
 class TestGate0Regime:
     """Scenario 11: Market regime computed once per run."""
 
@@ -99,6 +106,26 @@ class TestGate1Quality:
         passed, details = gate_1_quality(fund, config)
         assert passed is False
         assert "missing" in details.get("reason", "").lower()
+
+    def test_debt_free_company_passes(self):
+        """Debt/equity of 0 is the best possible value, not a missing one."""
+        passed, details = gate_1_quality(_make_fundamentals(debt_eq=0), config)
+        assert passed is True
+        assert details["debt_eq"] == 0
+
+    def test_missing_debt_equity_still_fails(self):
+        fund = _make_fundamentals()
+        fund["debtToEquity"] = None
+        passed, details = gate_1_quality(fund, config)
+        assert passed is False
+        assert "Debt/equity" in details["reason"]
+
+    def test_negative_equity_fails_with_its_own_reason(self):
+        fund = _make_fundamentals()
+        fund["negativeEquity"] = True
+        passed, details = gate_1_quality(fund, config)
+        assert passed is False
+        assert "equity is zero or negative" in details["reason"]
 
 
 class TestGate2DipAndStabilization:
@@ -261,24 +288,79 @@ class TestGate3Trap:
     def test_earnings_blackout_warning(self):
         """Scenario 8: Earnings within blackout days triggers warning."""
         prices_df = self._make_dipping_prices()
-        earnings_date = (datetime.now(timezone.utc) + timedelta(days=3)).strftime("%Y-%m-%d")
+        session = prices_df.index[-1].date()
         fund = _make_fundamentals()
-        fund["nextEarningsDate"] = earnings_date
+        fund["nextEarningsDate"] = (session + timedelta(days=3)).isoformat()
 
         passed, details = gate_3_trap(fund, prices_df, cfg=config, trap_behavior="warn")
         assert passed is True
-        assert any("דוח" in w for w in details.get("warnings", []))
+        assert any("Earnings in 3 days" in w for w in details.get("warnings", []))
+
+    def test_earnings_days_count_from_the_scored_session_not_the_clock(self):
+        """The cron often starts after midnight UTC. A report three sessions-days
+        after the last bar is three days out, whatever the clock says, and one
+        outside the blackout is not flagged."""
+        prices_df = self._make_dipping_prices()
+        session = prices_df.index[-1].date()
+        fund = _make_fundamentals()
+        fund["nextEarningsDate"] = (session + timedelta(days=config.EARNINGS_BLACKOUT_DAYS + 1)).isoformat()
+        _, details = gate_3_trap(fund, prices_df, cfg=config, trap_behavior="warn")
+        assert not any("Earnings" in w for w in details.get("warnings", []))
+
+        fund["nextEarningsDate"] = session.isoformat()   # reports on the scored day
+        _, details = gate_3_trap(fund, prices_df, cfg=config, trap_behavior="warn")
+        assert any("Earnings in 0 days" in w for w in details["warnings"])
 
     def test_earnings_suppress_mode(self):
-        """Scenario 8: Earnings suppression blocks the alert."""
+        """Scenario 8: SUPPRESS_ON_EARNINGS skips the stock instead of warning."""
         prices_df = self._make_dipping_prices()
-        earnings_date = (datetime.now(timezone.utc) + timedelta(days=3)).strftime("%Y-%m-%d")
         fund = _make_fundamentals()
-        fund["nextEarningsDate"] = earnings_date
-        fund["suppressOnEarnings"] = True
+        fund["nextEarningsDate"] = (prices_df.index[-1].date() + timedelta(days=3)).isoformat()
 
-        passed, details = gate_3_trap(fund, prices_df, cfg=config, trap_behavior="suppress")
+        passed, _ = gate_3_trap(fund, prices_df, cfg=config, trap_behavior="warn")
+        assert passed is True                     # the default warns
+        cfg = _cfg(SUPPRESS_ON_EARNINGS=True)
+        passed, details = gate_3_trap(fund, prices_df, cfg=cfg, trap_behavior="warn")
         assert passed is False
+        assert details["reason"] == "Earnings blackout suppressed"
+
+    def test_hard_8k_item_rejects_even_in_warn_mode(self):
+        """A 4.02 (past financials no longer reliable) filed inside the window
+        breaks the thesis outright."""
+        prices_df = self._make_dipping_prices()
+        session = prices_df.index[-1].date()
+        fund = _make_fundamentals()
+        fund["secFilings"] = [{"date": (session - timedelta(days=20)).isoformat(),
+                               "items": ["4.02", "9.01"]}]
+        passed, details = gate_3_trap(fund, prices_df, cfg=config, trap_behavior="warn")
+        assert passed is False
+        assert details["reason"].startswith("SEC 8-K: 4.02")
+        assert any("past financials no longer reliable" in w for w in details["warnings"])
+
+    def test_old_hard_8k_item_and_routine_items_pass(self):
+        """Outside the lookback window, or an item the config does not name
+        (2.02 earnings results), a filing changes nothing."""
+        prices_df = self._make_dipping_prices()
+        session = prices_df.index[-1].date()
+        fund = _make_fundamentals()
+        fund["secFilings"] = [
+            {"date": (session - timedelta(days=config.SEC_8K_HARD_LOOKBACK_DAYS + 1)).isoformat(),
+             "items": ["4.02"]},
+            {"date": (session - timedelta(days=2)).isoformat(), "items": ["2.02", "9.01"]},
+        ]
+        passed, details = gate_3_trap(fund, prices_df, cfg=config, trap_behavior="suppress")
+        assert passed is True
+        assert details["warnings"] == []
+
+    def test_soft_8k_item_warns_and_is_not_a_price_trap(self):
+        """A 5.02 warns; suppress mode only rejects price-based traps."""
+        prices_df = self._make_dipping_prices()
+        session = prices_df.index[-1].date()
+        fund = _make_fundamentals()
+        fund["secFilings"] = [{"date": (session - timedelta(days=5)).isoformat(), "items": ["5.02"]}]
+        passed, details = gate_3_trap(fund, prices_df, cfg=config, trap_behavior="suppress")
+        assert passed is True
+        assert any("director or officer change" in w for w in details["warnings"])
 
     def test_negative_revenue_growth_warning(self):
         """Negative revenue growth is a soft flag."""
