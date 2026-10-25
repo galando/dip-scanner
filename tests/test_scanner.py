@@ -104,6 +104,33 @@ class TestRunScan:
     @patch("src.scanner.data")
     @patch("src.regime.data")
     @patch("src.scanner.universe")
+    def test_recent_hard_8k_blocks_the_alert(self, mock_universe, mock_regime_data, mock_data, mock_telegram, mock_state, mock_env):
+        """The same passing stock, but it told the SEC its past financials are
+        no longer reliable three weeks ago: no alert."""
+        from datetime import timedelta
+        mock_universe.get_sp500_tickers.return_value = ["NFLX"]
+        mock_regime_data.fetch_prices.return_value = {"SPY": _make_spy_risk_on()}
+        prices = _make_passing_prices()
+        mock_data.fetch_prices.return_value = {"NFLX": prices}
+        fund = _make_fundamentals_passing()
+        fund["secFilings"] = [{"date": (prices.index[-1].date() - timedelta(days=21)).isoformat(),
+                               "items": ["4.02"]}]
+        mock_data.fetch_fundamentals.return_value = fund
+        mock_state.load_state.return_value = {}
+        mock_state.is_recently_alerted.return_value = False
+        mock_telegram.get_chat_ids.return_value = ["12345"]
+
+        assert run_scan() == []
+        mock_telegram.compose_alert.assert_not_called()
+        # Fundamentals were asked for with the last close, which prices SEC's share count.
+        assert mock_data.fetch_fundamentals.call_args.kwargs["price"] == float(prices["Close"].iloc[-1])
+
+    @patch("src.scanner.os.environ.get", return_value="fake_value")
+    @patch("src.scanner.state")
+    @patch("src.scanner.telegram")
+    @patch("src.scanner.data")
+    @patch("src.regime.data")
+    @patch("src.scanner.universe")
     def test_daily_cap_limits_alerts_to_best(self, mock_universe, mock_regime_data, mock_data, mock_telegram, mock_state, mock_env):
         """With more passers than MAX_ALERTS_PER_DAY, only the top-N are sent."""
         import config as cfg

@@ -1,0 +1,40 @@
+name: Checks
+on:
+  pull_request:                # unit tests + a live data check on every PR
+  workflow_dispatch:           # run the data check by hand, e.g. after setting SEC_USER_AGENT
+    inputs:
+      tickers:
+        description: 'Tickers for the data check (space separated, blank = default set)'
+        type: string
+        default: ''
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt pytest
+      - name: Unit tests
+        env:
+          PYTHONPATH: .
+        run: python -m pytest -q
+  datacheck:
+    # Talks to Yahoo and, when SEC_USER_AGENT is set, to SEC: it shows what the
+    # gates will read from the live feeds, which the offline tests cannot.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Data check
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          PYTHONPATH: .
+          # Through the environment, never pasted into the script: an input
+          # expanded inside `run:` is executed as shell.
+          TICKERS: ${{ inputs.tickers }}
+        run: python -m src.datacheck $TICKERS

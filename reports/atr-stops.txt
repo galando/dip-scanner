@@ -1,0 +1,18 @@
+ATR stops and risk sizing, across 8 rolling 30-day windows (2 of them independent).
+Return on the $10,000 book. Risk sizing can leave part of a slot in cash,
+which lowers return on capital by construction; read 'worst' beside 'mean'.
+
+setting                             mean   worst   median   beats SPY  trades      vs current, 95% CI
+current (12% stop, full slot)      +5.55   -0.10    +6.11       7/8       132                        
+12% stop + risk sizing             +5.55   -0.10    +6.11       7/8       132    +0.00 [+0.00, +0.00]
+
+ATR stop x2                        +5.53   -0.32    +5.99       7/8       134    -0.03 [-0.24, +0.16]
+ATR stop x3                        +5.83   -0.10    +6.53       7/8       132    +0.28 [+0.00, +0.83]
+ATR stop x4                        +5.83   -0.10    +6.53       7/8       132    +0.28 [+0.00, +0.83]
+
+ATR x2 + risk sizing               +5.49   -0.22    +6.00       7/8       134    -0.06 [-0.25, +0.11]
+ATR x3 + risk sizing               +4.88   +0.02    +5.45       7/8       132    -0.67 [-1.20, -0.03]
+ATR x4 + risk sizing               +3.99   +0.06    +4.46       7/8       132    -1.56 [-2.30, -0.79]
+
+The intervals resample overlapping windows, so they are optimistic: a floor
+on the uncertainty, not a test. Nothing here is adopted into config.

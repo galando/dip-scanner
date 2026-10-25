@@ -172,3 +172,16 @@ def test_evaluate_refuses_an_empty_window_list(tmp_path):
     import src.tune as tune
     with pytest.raises(ValueError, match="no windows to evaluate"):
         tune.evaluate({"SIM_MIN_HOLD_SESSIONS": 0}, [])
+
+
+def test_stop_table_rows_and_the_risk_sizing_identity(cache, alerts):
+    """Every STOP_ROWS entry gets a row; risk sizing on the default stop is the
+    current book, which is what makes the other rows comparable."""
+    windows = [(date(2026, 1, 2), date(2026, 1, 31))]
+    rows = tune.stop_table(windows, cache_dir=cache, alerts_path=alerts)
+    assert len(rows) == len(tune.STOP_ROWS)
+    measured = [r for r in rows if r is not None]
+    current, identity = measured[0], measured[1]
+    assert current["settings"] == {} and identity["settings"] == {"SIM_SIZING": "risk"}
+    assert identity["mean_pct"] == current["mean_pct"]
+    assert identity["trades"] == current["trades"]

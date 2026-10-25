@@ -174,8 +174,7 @@ def replay(start: date, end: date = None, cfg=config, cache_dir: str = pricecach
                 pos = {
                     "ticker": ticker, "name": ticker,
                     "entry_price": price, "entry_date": today.isoformat(),
-                    "shares": cfg.SIM_CASH_PER_STOCK / price,
-                    "cost_basis": cfg.SIM_CASH_PER_STOCK,
+                    **simulate.plan_entry(price, prices_map[ticker], cfg.SIM_CASH_PER_STOCK, cfg),
                     "entry_reason": {},
                 }
                 state["positions"].append(pos)

@@ -114,7 +114,8 @@ def run_scan() -> list[str]:
                 continue
 
             # Fetch fundamentals only for survivors (expensive)
-            fund = data.fetch_fundamentals(ticker)
+            fund = data.fetch_fundamentals(
+                ticker, price=float(prices_df["Close"].iloc[-1]))
             if fund is None:
                 logger.debug("SKIP %s: no fundamental data", ticker)
                 continue

@@ -301,7 +301,9 @@ GRID = {
 
 _SHORT_NAMES = {"SIM_RSI_EXIT": "RSI", "SIM_TAKE_PROFIT_PCT": "TP",
                 "SIM_STOP_LOSS_PCT": "SL", "SIM_THESIS_BREAK_MIN_LOSS_PCT": "TB",
-                "SIM_MIN_HOLD_SESSIONS": "hold"}
+                "SIM_MIN_HOLD_SESSIONS": "hold", "SIM_STOP_MODE": "stop",
+                "SIM_STOP_ATR_MULT": "ATRx", "SIM_SIZING": "size",
+                "SIM_RISK_PER_TRADE_PCT": "risk%"}
 
 
 def _value(knob: str, value) -> str:
@@ -447,6 +449,77 @@ def _print_knobs() -> None:
               f"{row['trades']:>8}")
 
 
+# The volatility-scaled stop and risk sizing (config: SIM_STOP_MODE, SIM_SIZING),
+# each measured against the CURRENT configuration, not the pre-tuning baseline
+# the knob table uses. The second row is a check, not a candidate: risk sizing
+# on the default 12% stop must reproduce the current book exactly.
+STOP_ROWS = [
+    ("current (12% stop, full slot)", {}),
+    ("12% stop + risk sizing", {"SIM_SIZING": "risk"}),
+    (None, None),
+    ("ATR stop x2", {"SIM_STOP_MODE": "atr", "SIM_STOP_ATR_MULT": 2.0}),
+    ("ATR stop x3", {"SIM_STOP_MODE": "atr", "SIM_STOP_ATR_MULT": 3.0}),
+    ("ATR stop x4", {"SIM_STOP_MODE": "atr", "SIM_STOP_ATR_MULT": 4.0}),
+    (None, None),
+    ("ATR x2 + risk sizing", {"SIM_STOP_MODE": "atr", "SIM_STOP_ATR_MULT": 2.0, "SIM_SIZING": "risk"}),
+    ("ATR x3 + risk sizing", {"SIM_STOP_MODE": "atr", "SIM_STOP_ATR_MULT": 3.0, "SIM_SIZING": "risk"}),
+    ("ATR x4 + risk sizing", {"SIM_STOP_MODE": "atr", "SIM_STOP_ATR_MULT": 4.0, "SIM_SIZING": "risk"}),
+]
+
+
+def stop_table(windows, cache_dir: str = pricecache.CACHE_DIR,
+               alerts_path: str = replay.ALERTS_PATH) -> list[dict | None]:
+    """One row per STOP_ROWS entry, measured on `windows`. None = separator."""
+    rows: list[dict | None] = []
+    for label, override in STOP_ROWS:
+        if label is None:
+            rows.append(None)
+            continue
+        r = evaluate(override, windows, cache_dir, alerts_path)
+        benchmarked = [w for w in r["windows"] if w["benchmark_pct"] is not None]
+        rows.append({
+            "label": label,
+            "settings": override,
+            "mean_pct": r["mean_pct"],
+            "worst_pct": r["worst_pct"],
+            "median_pct": statistics.median(w["return_pct"] for w in r["windows"]),
+            "beats": sum(1 for w in benchmarked if w["return_pct"] > w["benchmark_pct"]),
+            "benchmarked": len(benchmarked),
+            "trades": r["trades"],
+        })
+    return rows
+
+
+def _print_stops() -> None:
+    import src.validate as validate            # imported here: validate imports tune
+
+    first = min(replay.load_alerts())
+    lo, hi = validate._span()
+    start = max(lo, date.fromisoformat(first))
+    windows = validate.rolling(start, hi)
+    apart = validate.non_overlapping(start, hi)
+
+    print(f"ATR stops and risk sizing, across {len(windows)} rolling 30-day windows "
+          f"({len(apart)} of them independent).")
+    print("Return on the $10,000 book. Risk sizing can leave part of a slot in cash,")
+    print("which lowers return on capital by construction; read 'worst' beside 'mean'.\n")
+    print(f"{'setting':32}{'mean':>8}{'worst':>8}{'median':>9}{'beats SPY':>12}{'trades':>8}"
+          f"{'vs current, 95% CI':>24}")
+    for row in stop_table(windows):
+        if row is None:
+            print()
+            continue
+        ci = ""
+        if row["settings"]:
+            b = validate.bootstrap(row["settings"], {}, windows)
+            ci = f"{b['observed_mean_delta']:+.2f} [{b['ci_low']:+.2f}, {b['ci_high']:+.2f}]"
+        print(f"{row['label']:32}{row['mean_pct']:+8.2f}{row['worst_pct']:+8.2f}"
+              f"{row['median_pct']:+9.2f}{row['beats']:>8}/{row['benchmarked']:<3}"
+              f"{row['trades']:>8}{ci:>24}")
+    print("\nThe intervals resample overlapping windows, so they are optimistic: a floor")
+    print("on the uncertainty, not a test. Nothing here is adopted into config.")
+
+
 if __name__ == "__main__":
     import sys
     command = sys.argv[1] if len(sys.argv) > 1 else "curve"
@@ -458,5 +531,7 @@ if __name__ == "__main__":
         _print_knobs()
     elif command == "sweep":
         _print_sweep()
+    elif command == "stops":
+        _print_stops()
     else:
-        raise SystemExit("usage: python -m src.tune [curve|cost|knobs|sweep]")
+        raise SystemExit("usage: python -m src.tune [curve|cost|knobs|sweep|stops]")

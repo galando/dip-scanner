@@ -1,10 +1,12 @@
 """Data fetching — yfinance wrapper with rate limiting and graceful error handling."""
 import logging
+from datetime import date, datetime, timezone
 
 import yfinance as yf
 import pandas as pd
 
 import config
+import src.sec as sec
 
 logger = logging.getLogger(__name__)
 
@@ -71,20 +73,99 @@ def fetch_prices(tickers: list[str], period: str = None) -> dict[str, pd.DataFra
     return result
 
 
-def fetch_fundamentals(ticker: str) -> dict | None:
+def _today() -> date:
+    return datetime.now(timezone.utc).date()
+
+
+def _next_earnings_date(yf_ticker, info: dict, today: date) -> str | None:
+    """The first earnings date on or after `today`, as "YYYY-MM-DD", or None.
+
+    yfinance's .info has no nextEarningsDate field, so the blackout check in
+    Gate 3 read None for every stock and never fired. The upcoming report date
+    lives in Ticker.calendar["Earnings Date"] (one date, or two when Yahoo only
+    knows a range; the earlier one is used). The raw quote timestamps are a
+    fallback for when the calendar request fails.
+    """
+    dates: list[date] = []
+    try:
+        calendar = yf_ticker.calendar
+    except Exception as e:
+        logger.warning("Failed to fetch earnings calendar: %s", e)
+        calendar = None
+    if isinstance(calendar, dict):
+        for d in calendar.get("Earnings Date") or []:
+            if isinstance(d, datetime):
+                d = d.date()
+            if isinstance(d, date):
+                dates.append(d)
+    if not dates:
+        for key in ("earningsTimestampStart", "earningsTimestamp"):
+            ts = info.get(key)
+            if isinstance(ts, (int, float)) and ts > 0:
+                dates.append(datetime.fromtimestamp(ts, tz=timezone.utc).date())
+    upcoming = sorted(d for d in dates if d >= today)
+    return upcoming[0].isoformat() if upcoming else None
+
+
+def fetch_fundamentals(ticker: str, price: float | None = None) -> dict | None:
     """Fetch fundamental data for a single ticker via yf.Ticker.info.
 
     Returns dict of available fields, or None on failure.
     Key fields: returnOnEquity, operatingMargins, debtToEquity, marketCap,
                 shortName, trailingPE, earningsGrowth, revenueGrowth,
-                forwardPE, nextEarningsDate.
+                forwardPE, nextEarningsDate (from Ticker.calendar).
+
+    When SEC access is configured (see src/sec.py), the four Gate 1 fields are
+    replaced by values computed from the company's own filings, the same way
+    the backtest computes them, and secFilings carries its recent 8-K items.
+    A field SEC cannot provide keeps Yahoo's value; qualitySource says which
+    source each field came from. `price` (the last close) prices the SEC share
+    count into a market cap.
     """
     try:
-        info = yf.Ticker(ticker).info
+        yf_ticker = yf.Ticker(ticker)
+        info = yf_ticker.info
         if not info:
             logger.warning("No fundamental data for %s", ticker)
             return None
-        return info
     except Exception as e:
         logger.warning("Failed to fetch fundamentals for %s: %s", ticker, e)
         return None
+
+    info = dict(info)
+    info["nextEarningsDate"] = _next_earnings_date(yf_ticker, info, _today())
+    return _apply_sec(ticker, info, price)
+
+
+def _apply_sec(ticker: str, info: dict, price: float | None) -> dict:
+    """Overlay SEC fundamentals and 8-K filings onto Yahoo's info dict."""
+    if not sec.enabled():
+        return info
+    try:
+        company = sec.load_company(ticker, include_facts=config.QUALITY_SOURCE == "sec")
+    except Exception as e:  # SEC trouble must never cost the scan a stock
+        logger.warning("SEC data unavailable for %s: %s", ticker, e)
+        return info
+    if company is None:
+        return info
+
+    info["secFilings"] = company.filings
+    if config.QUALITY_SOURCE != "sec" or company.facts is None:
+        return info
+
+    pit = sec.fundamentals_asof(company, known_by=_today(), price=price)
+    sources = {}
+    for field in sec.QUALITY_FIELDS:
+        if pit.get(field) is not None:
+            info[field] = pit[field]
+            sources[field] = "sec"
+        else:
+            sources[field] = "yahoo"
+    if pit.get("negativeEquity"):
+        # The filings say equity is zero or negative. Yahoo's ROE for such a
+        # company is not a better number, it is a meaningless one.
+        info["negativeEquity"] = True
+        sources["returnOnEquity"] = sources["debtToEquity"] = "sec"
+    info["qualitySource"] = sources
+    info["secPeriodEnd"] = pit.get("periodEnd")
+    return info

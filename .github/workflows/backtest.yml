@@ -28,6 +28,8 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Optional. Unset = no SEC requests (Yahoo only). See README, SEC data.
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           PYTHONPATH: .
         run: |
           python -m src.backtest \

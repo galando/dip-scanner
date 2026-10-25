@@ -33,6 +33,15 @@ class _Cfg:
     GAP_DOWN_PCT = config.GAP_DOWN_PCT
     GAP_VOLUME_MULT = config.GAP_VOLUME_MULT
     DEDUP_DAYS = config.DEDUP_DAYS
+    # Gate 1, used when SEC data is replayed
+    MIN_ROE = config.MIN_ROE
+    MIN_OP_MARGIN = config.MIN_OP_MARGIN
+    MAX_DEBT_EQUITY = config.MAX_DEBT_EQUITY
+    MIN_MKT_CAP = config.MIN_MKT_CAP
+    SEC_8K_HARD_ITEMS = config.SEC_8K_HARD_ITEMS
+    SEC_8K_SOFT_ITEMS = config.SEC_8K_SOFT_ITEMS
+    SEC_8K_HARD_LOOKBACK_DAYS = config.SEC_8K_HARD_LOOKBACK_DAYS
+    SEC_8K_SOFT_LOOKBACK_DAYS = config.SEC_8K_SOFT_LOOKBACK_DAYS
     # Backtest knobs (small for tests)
     BACKTEST_MIN_HISTORY = 252
     BACKTEST_STEP_DAYS = 1
@@ -223,3 +232,93 @@ class TestOfflineGuard:
         with caplog.at_level(logging.WARNING):
             backtest.main()
         assert "no cached SPY" in caplog.text
+
+
+# --------------------------------------------------------------------------- #
+# Gate 1 and the 8-K trap, replayed point in time from SEC data
+# --------------------------------------------------------------------------- #
+import src.sec as sec  # noqa: E402
+
+
+def _sec_year(y, q, filed_lag_days=0):
+    """Three 10-Q quarters and a 10-K year of value q per quarter."""
+    def lag(d):
+        return (pd.Timestamp(d) + pd.Timedelta(days=filed_lag_days)).date().isoformat()
+    return [
+        {"start": f"{y}-01-01", "end": f"{y}-03-31", "val": q, "filed": lag(f"{y}-05-01"), "form": "10-Q", "accn": f"{y}q1"},
+        {"start": f"{y}-04-01", "end": f"{y}-06-30", "val": q, "filed": lag(f"{y}-08-01"), "form": "10-Q", "accn": f"{y}q2"},
+        {"start": f"{y}-07-01", "end": f"{y}-09-30", "val": q, "filed": lag(f"{y}-11-01"), "form": "10-Q", "accn": f"{y}q3"},
+        {"start": f"{y}-01-01", "end": f"{y}-12-31", "val": 4 * q, "filed": lag(f"{y + 1}-02-15"), "form": "10-K", "accn": f"{y}k"},
+    ]
+
+
+def _sec_company(net_income=30.0, filed_lag_days=0, filings=()):
+    """A company whose figures as of spring 2023 pass Gate 1 (ROE 24%, margin 20%)."""
+    def inst(end, val, filed):
+        return [{"end": end, "val": val, "filed": filed, "form": "10-K", "accn": "k"}]
+    facts = {
+        "Revenues": _sec_year(2021, 100.0) + _sec_year(2022, 100.0, filed_lag_days),
+        "OperatingIncomeLoss": _sec_year(2021, 20.0) + _sec_year(2022, 20.0, filed_lag_days),
+        "NetIncomeLoss": _sec_year(2021, net_income) + _sec_year(2022, net_income, filed_lag_days),
+        "StockholdersEquity": inst("2022-12-31", 500.0, "2023-02-15"),
+        "LongTermDebt": inst("2022-12-31", 100.0, "2023-02-15"),
+        "EntityCommonStockSharesOutstanding": inst("2023-02-01", 1e9, "2023-02-15"),
+    }
+    return sec.Company("TST", 1, list(filings), facts)
+
+
+class TestPointInTimeQuality:
+    def test_healthy_company_keeps_every_price_signal(self):
+        df = _dip_recovery_prices()
+        funnel = {"quality": 0, "no_sec_data": 0, "filing": 0}
+        assert find_signals(df, None, _Cfg, company=_sec_company(), funnel=funnel) == \
+            find_signals(df, None, _Cfg)
+        assert funnel == {"quality": 0, "no_sec_data": 0, "filing": 0}
+
+    def test_low_roe_company_is_filtered_out(self):
+        funnel = {"quality": 0, "no_sec_data": 0, "filing": 0}
+        sigs = find_signals(_dip_recovery_prices(), None, _Cfg,
+                            company=_sec_company(net_income=5.0), funnel=funnel)
+        assert sigs == []
+        assert funnel["quality"] > 0 and funnel["no_sec_data"] == 0
+
+    def test_figures_filed_after_the_signal_are_not_used(self):
+        """The same numbers, filed a year late: on the signal dates nothing
+        recent enough was known, so the windows count as missing data."""
+        funnel = {"quality": 0, "no_sec_data": 0, "filing": 0}
+        sigs = find_signals(_dip_recovery_prices(), None, _Cfg,
+                            company=_sec_company(filed_lag_days=400), funnel=funnel)
+        assert sigs == []
+        assert funnel["no_sec_data"] > 0
+
+    def test_8k_counts_only_once_filed_before_the_signal_session(self):
+        df = _dip_recovery_prices()
+        first = find_signals(df, None, _Cfg)[0]
+        day = df.index[first].date()
+
+        before = _sec_company(filings=[{"date": (day - pd.Timedelta(days=10)).isoformat(),
+                                        "items": ["4.02"]}])
+        funnel = {"quality": 0, "no_sec_data": 0, "filing": 0}
+        assert first not in find_signals(df, None, _Cfg, company=before, funnel=funnel)
+        assert funnel["filing"] > 0
+
+        same_day = _sec_company(filings=[{"date": day.isoformat(), "items": ["4.02"]}])
+        assert first in find_signals(df, None, _Cfg, company=same_day)
+
+    def test_run_backtest_compares_the_same_tickers_with_and_without(self):
+        prices = {"AAA": _dip_recovery_prices(), "BBB": _dip_recovery_prices()}
+        results = run_backtest(prices, None, _Cfg, companies={"AAA": _sec_company(net_income=5.0)})
+        assert results["sec"] == {"tickers": 1, "of": 2}
+        assert results["with_stabilization"]["stats"]["n_signals"] == 0
+        assert results["price_only"]["stats"]["n_signals"] == 2      # AAA only, not BBB
+        assert results["with_stabilization"]["funnel"]["quality"] > 0
+        assert "funnel" not in results["price_only"]
+
+        report = format_report(results, _Cfg, n_tickers=2, period="test")
+        assert "on the 1 of 2 tickers SEC had data for" in report
+        assert "WITHOUT quality and 8-K checks" in report
+
+    def test_without_companies_the_report_is_unchanged(self):
+        results = run_backtest({"AAA": _dip_recovery_prices()}, None, _Cfg)
+        assert "price_only" not in results and "sec" not in results
+        assert "Gate 1 quality cannot be replayed" in format_report(results, _Cfg, 1, "t")

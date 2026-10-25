@@ -140,3 +140,42 @@ class TestFetchFundamentals:
         assert result is not None
         assert result["returnOnEquity"] == 0.15
         assert "operatingMargins" not in result
+
+
+class TestNextEarningsDate:
+    """yfinance's .info has no nextEarningsDate, so Gate 3's blackout never
+    fired. The date has to come from Ticker.calendar."""
+
+    @patch("src.data._today")
+    @patch("src.data.yf")
+    def test_date_comes_from_the_calendar(self, mock_yf, mock_today):
+        from datetime import date
+        mock_today.return_value = date(2026, 10, 23)
+        mock_ticker = MagicMock()
+        mock_ticker.info = {"shortName": "Apple"}
+        mock_ticker.calendar = {"Earnings Date": [date(2026, 10, 29), date(2026, 11, 2)]}
+        mock_yf.Ticker.return_value = mock_ticker
+
+        result = fetch_fundamentals("AAPL")
+        assert result["nextEarningsDate"] == "2026-10-29"   # the earlier end of a range
+
+    @patch("src.data.yf")
+    def test_past_dates_and_a_failed_calendar_give_none(self, mock_yf):
+        from datetime import date
+        mock_ticker = MagicMock()
+        mock_ticker.info = {"shortName": "X"}
+        mock_ticker.calendar = {"Earnings Date": [date(2001, 1, 1)]}
+        mock_yf.Ticker.return_value = mock_ticker
+        assert fetch_fundamentals("X")["nextEarningsDate"] is None
+
+        type(mock_ticker).calendar = property(lambda self: (_ for _ in ()).throw(Exception("429")))
+        assert fetch_fundamentals("X")["nextEarningsDate"] is None
+
+    def test_quote_timestamp_is_the_fallback(self):
+        from datetime import date, datetime, timezone
+        from src.data import _next_earnings_date
+        mock_ticker = MagicMock()
+        mock_ticker.calendar = {}
+        ts = datetime(2026, 11, 4, 21, 0, tzinfo=timezone.utc).timestamp()
+        got = _next_earnings_date(mock_ticker, {"earningsTimestampStart": ts}, date(2026, 10, 25))
+        assert got == "2026-11-04"
