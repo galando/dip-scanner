@@ -2,6 +2,7 @@
 
     PYTHONPATH=. python -m src.datacheck              # a default handful of tickers
     PYTHONPATH=. python -m src.datacheck AAPL JPM KO
+    PYTHONPATH=. python -m src.datacheck --tags JPM   # also every debt-like tag filed
 
 For each ticker it prints what Gate 1 and Gate 3 will read: the next earnings
 date from Yahoo's calendar, the 8-K items SEC lists for the last 90 days, and
@@ -12,6 +13,7 @@ before turning QUALITY_SOURCE to "sec" changes which stocks alert.
 Exits 1 when a source the scanner relies on returned nothing usable for any
 ticker: no earnings date at all, or SEC switched on but no figures came back.
 """
+import argparse
 import sys
 from datetime import date, datetime, timedelta, timezone
 
@@ -34,10 +36,10 @@ def _fmt(field: str, value) -> str:
     return f"{value * 100:.1f}%"
 
 
-def check(ticker: str, today: date) -> dict:
+def check(ticker: str, today: date, tags: bool = False) -> dict:
     """Everything the gates would read for one ticker, from both sources."""
     out = {"ticker": ticker, "earnings": None, "yahoo": {}, "sec": None,
-           "filings": [], "errors": []}
+           "filings": [], "tags": None, "errors": []}
     price = None
     try:
         t = yf.Ticker(ticker)
@@ -56,6 +58,9 @@ def check(ticker: str, today: date) -> dict:
             out["sec"] = sec.fundamentals_asof(company, known_by=today, price=price)
             since = (today - timedelta(days=90)).isoformat()
             out["filings"] = [f for f in company.filings if f["date"] >= since]
+            end = out["sec"].get("periodEnd")
+            if tags and end:
+                out["tags"] = sec.debt_like_tags(sec.fetch_raw_facts(company.cik), end)
     return out
 
 
@@ -72,6 +77,10 @@ def render(result: dict) -> str:
                          f"{_fmt(f, result['sec'].get(f)):>12}")
         if result["sec"].get("negativeEquity"):
             lines.append("    SEC: equity is zero or negative, so Gate 1 fails this stock")
+        if result["tags"] is not None:
+            lines.append(f"  debt-like tags filed for {result['sec'].get('periodEnd')}:")
+            for concept, val in result["tags"] or [("(none)", 0.0)]:
+                lines.append(f"    {concept:72}{val / 1e9:>12,.2f}B")
     else:
         lines.append("  quality (Yahoo): " + ", ".join(
             f"{f} {_fmt(f, result['yahoo'].get(f))}" for f in sec.QUALITY_FIELDS))
@@ -81,14 +90,19 @@ def render(result: dict) -> str:
 
 
 def main(argv: list[str]) -> int:
-    tickers = argv or DEFAULT_TICKERS
+    parser = argparse.ArgumentParser(prog="python -m src.datacheck")
+    parser.add_argument("tickers", nargs="*")
+    parser.add_argument("--tags", action="store_true",
+                        help="also list every debt-like tag each company filed (SEC only)")
+    args = parser.parse_args(argv)
+    tickers = args.tickers or DEFAULT_TICKERS
     today = datetime.now(timezone.utc).date()
     if sec.enabled():
         print(f"SEC: on (QUALITY_SOURCE = {config.QUALITY_SOURCE!r})")
     else:
         print("SEC: off (SEC_USER_AGENT is not set), so Yahoo only")
     print()
-    results = [check(t, today) for t in tickers]
+    results = [check(t, today, tags=args.tags) for t in tickers]
     for r in results:
         print(render(r))
         print()

@@ -25,6 +25,7 @@ the as-of date count, so a later restatement cannot leak into the past.
 """
 import logging
 import os
+import re
 import time
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -308,11 +309,38 @@ def extract_facts(companyfacts: dict) -> dict[str, list[dict]]:
     return out
 
 
-def fetch_facts(cik: int) -> dict[str, list[dict]] | None:
+def fetch_raw_facts(cik: int) -> dict | None:
+    """The whole companyfacts file, for diagnostics; the gates use fetch_facts."""
     raw = _get_json(FACTS_URL.format(cik=cik))
-    if not isinstance(raw, dict):
-        return None
-    return extract_facts(raw)
+    return raw if isinstance(raw, dict) else None
+
+
+def fetch_facts(cik: int) -> dict[str, list[dict]] | None:
+    raw = fetch_raw_facts(cik)
+    return extract_facts(raw) if raw is not None else None
+
+
+_DEBT_LIKE = re.compile(r"Debt|Borrowing|CommercialPaper|NotesPayable|LeaseLiabilit|LeaseObligation",
+                        re.IGNORECASE)
+
+
+def debt_like_tags(companyfacts: dict, end: str) -> list[tuple[str, float]]:
+    """Every us-gaap balance-sheet value at `end` whose tag looks like debt.
+
+    A diagnostic, largest first: it shows which tags a company actually files,
+    so a gap in _debt_at's rules is seen in the data instead of guessed at.
+    """
+    out = []
+    for concept, node in (((companyfacts or {}).get("facts") or {}).get("us-gaap") or {}).items():
+        if not _DEBT_LIKE.search(concept):
+            continue
+        rows = [f for f in ((node.get("units") or {}).get("USD") or [])
+                if not f.get("start") and f.get("end") == end
+                and str(f.get("form") or "").split("/")[0] in REPORT_FORMS]
+        if rows:
+            latest = max(rows, key=lambda f: (f.get("filed", ""), f.get("accn", "")))
+            out.append((concept, float(latest["val"])))
+    return sorted(out, key=lambda t: -abs(t[1]))
 
 
 @dataclass
