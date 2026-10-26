@@ -101,15 +101,22 @@ SEC EDGAR for every stock that reaches the quality gate:
 
 Why replace Yahoo's numbers at all: the backtest can only rebuild fundamentals
 from filings (Yahoo has no history), so a live gate on Yahoo's figures and a
-backtest on SEC's would be testing two different gates. Expect some stocks to
-change sides: the two sources define ROE and debt differently (leases are not
-debt here). `python -m src.datacheck AAPL JPM ...` prints both side by side.
+backtest on SEC's would be testing two different gates. Debt counts lease
+liabilities, as Yahoo's figures do, so the 150 limit keeps its meaning: on the
+October 2026 check SEC debt/equity matched Yahoo's on every company both could
+measure (AAPL 78, MSFT 29, ROL 81, IDXX 68, HSY 130, NOC 93, ...). ROE and
+margins still differ a little, since Yahoo and the filings measure them over
+slightly different periods. `python -m src.datacheck AAPL JPM ...` prints both
+side by side, and `--tags` lists every debt tag a company filed.
 
 Behaviour to know about:
 
 - A company whose filed equity is zero or negative (heavy buybacks) fails
   Gate 1 with that reason: ROE and debt/equity have no meaning for it.
 - Banks and insurers file no operating income line; pre-tax income stands in.
+- Banks get a debt figure for the first time (JPM 145, WFC 117, BAC 137).
+  Yahoo gives none, so under Yahoo every bank failed the debt check by
+  accident; with SEC a bank with ROE above 12% (JPM, WFC) can pass Gate 1.
 - SEC trouble never costs a stock: any failure falls back to Yahoo, and a 403
   (a User-Agent SEC rejects) switches SEC off for the rest of the run with
   one log line.

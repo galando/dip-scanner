@@ -25,6 +25,7 @@ the as-of date count, so a later restatement cannot leak into the past.
 """
 import logging
 import os
+import re
 import time
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -81,12 +82,21 @@ NET_INCOME = (("NetIncomeLoss",), ("NetIncomeLossAvailableToCommonStockholdersBa
               ("ProfitLoss",))
 EQUITY = (("StockholdersEquity",),
           ("StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",))
-# Debt is assembled from the balance sheet; see _debt_at for how the pieces
-# combine without counting any of them twice. Leases are not debt here.
+# Debt is assembled from the balance sheet; see debt_parts for how the pieces
+# combine without counting any of them twice.
 DEBT_CONCEPTS = ("LongTermDebtNoncurrent", "LongTermDebtAndCapitalLeaseObligations",
                  "DebtCurrent", "LongTermDebtAndCapitalLeaseObligationsCurrent",
                  "LongTermDebtCurrent", "ShortTermBorrowings", "CommercialPaper",
-                 "LongTermDebt", "DebtLongtermAndShorttermCombinedAmount")
+                 "OtherShortTermBorrowings", "LinesOfCreditCurrent", "LongTermDebt",
+                 "LongTermDebtAndCapitalLeaseObligationsIncludingCurrentMaturities",
+                 "DebtLongtermAndShorttermCombinedAmount")
+# Tags whose debt figure already contains finance (formerly "capital") leases.
+CAPITAL_LEASE_DEBT = ("LongTermDebtAndCapitalLeaseObligations",
+                      "LongTermDebtAndCapitalLeaseObligationsCurrent",
+                      "LongTermDebtAndCapitalLeaseObligationsIncludingCurrentMaturities")
+LEASE_CONCEPTS = ("OperatingLeaseLiability", "OperatingLeaseLiabilityNoncurrent",
+                  "OperatingLeaseLiabilityCurrent", "FinanceLeaseLiability",
+                  "FinanceLeaseLiabilityNoncurrent", "FinanceLeaseLiabilityCurrent")
 SHARES_DEI = "EntityCommonStockSharesOutstanding"
 SHARES_DILUTED = "WeightedAverageNumberOfDilutedSharesOutstanding"
 
@@ -98,7 +108,7 @@ def _flat(groups) -> tuple[str, ...]:
 # (taxonomy, concept, unit) for every fact this module reads.
 NEEDED = (
     [("us-gaap", c, "USD") for c in _flat(REVENUE + OPERATING_INCOME + NET_INCOME + EQUITY)]
-    + [("us-gaap", c, "USD") for c in DEBT_CONCEPTS]
+    + [("us-gaap", c, "USD") for c in DEBT_CONCEPTS + LEASE_CONCEPTS]
     + [("dei", SHARES_DEI, "shares"), ("us-gaap", SHARES_DILUTED, "shares")]
 )
 
@@ -308,11 +318,38 @@ def extract_facts(companyfacts: dict) -> dict[str, list[dict]]:
     return out
 
 
-def fetch_facts(cik: int) -> dict[str, list[dict]] | None:
+def fetch_raw_facts(cik: int) -> dict | None:
+    """The whole companyfacts file, for diagnostics; the gates use fetch_facts."""
     raw = _get_json(FACTS_URL.format(cik=cik))
-    if not isinstance(raw, dict):
-        return None
-    return extract_facts(raw)
+    return raw if isinstance(raw, dict) else None
+
+
+def fetch_facts(cik: int) -> dict[str, list[dict]] | None:
+    raw = fetch_raw_facts(cik)
+    return extract_facts(raw) if raw is not None else None
+
+
+_DEBT_LIKE = re.compile(r"Debt|Borrowing|CommercialPaper|NotesPayable|LeaseLiabilit|LeaseObligation"
+                        r"|LinesOfCredit|LineOfCredit", re.IGNORECASE)
+
+
+def debt_like_tags(companyfacts: dict, end: str) -> list[tuple[str, float]]:
+    """Every us-gaap balance-sheet value at `end` whose tag looks like debt.
+
+    A diagnostic, largest first: it shows which tags a company actually files,
+    so a gap in _debt_at's rules is seen in the data instead of guessed at.
+    """
+    out = []
+    for concept, node in (((companyfacts or {}).get("facts") or {}).get("us-gaap") or {}).items():
+        if not _DEBT_LIKE.search(concept):
+            continue
+        rows = [f for f in ((node.get("units") or {}).get("USD") or [])
+                if not f.get("start") and f.get("end") == end
+                and str(f.get("form") or "").split("/")[0] in REPORT_FORMS]
+        if rows:
+            latest = max(rows, key=lambda f: (f.get("filed", ""), f.get("accn", "")))
+            out.append((concept, float(latest["val"])))
+    return sorted(out, key=lambda t: -abs(t[1]))
 
 
 @dataclass
@@ -439,40 +476,91 @@ def _first_instant(facts: dict, concepts, end: str, known_by: str) -> float | No
     return None
 
 
-def _debt_at(facts: dict, end: str, known_by: str) -> float | None:
-    """Total borrowings on the balance sheet dated `end`, or None if none are filed.
+def _first_named(facts: dict, concepts, end: str, known_by: str) -> tuple[str | None, float | None]:
+    for concept in concepts:
+        v = _instant_at(facts, concept, end, known_by)
+        if v is not None:
+            return concept, v
+    return None, None
 
-    Companies split the same debt across different tags. The rules, in order:
+
+def _lease_total(facts: dict, kind: str, end: str, known_by: str) -> list[tuple[str, float]]:
+    """One lease liability ("Operating" or "Finance"): its total, else its two parts."""
+    tag, total = _first_named(facts, (f"{kind}LeaseLiability",), end, known_by)
+    if total is not None:
+        return [(tag, total)]
+    parts = [_first_named(facts, (f"{kind}LeaseLiability{side}",), end, known_by)
+             for side in ("Noncurrent", "Current")]
+    return [(t, v) for t, v in parts if v is not None]
+
+
+def debt_parts(facts: dict, end: str, known_by: str) -> dict:
+    """Borrowings and lease liabilities on the balance sheet dated `end`.
+
+    Returns {"borrowings", "leases", "tags"}: borrowings is None when the
+    filings cannot support a figure, leases 0.0 when none are filed, and tags
+    the concepts used. Companies split the same debt across different tags,
+    so the borrowing rules go in order:
       * noncurrent long-term debt + the current part, where the current part is
         DebtCurrent when filed (it already includes short-term borrowings) or
         else current maturities + short-term borrowings;
       * otherwise DebtLongtermAndShorttermCombinedAmount;
-      * otherwise LongTermDebt (which includes its current maturities) +
-        short-term borrowings;
-      * otherwise short-term debt alone.
-    Short-term borrowings are ShortTermBorrowings, else CommercialPaper, never
-    both: commercial paper is often a part of the borrowings figure.
-    """
-    def at(*concepts):
-        return _first_instant(facts, concepts, end, known_by)
+      * otherwise total long-term debt (LongTermDebt, or the same including
+        finance leases, which is how JPM files it) + short-term borrowings;
+      * otherwise unknown. Short-term debt alone is not trusted: it is what is
+        left when the long-term part sits under a tag these rules do not read,
+        and it made JPM's debt look like a sixth of what it is.
+    Short-term borrowings are the first of ShortTermBorrowings, CommercialPaper,
+    OtherShortTermBorrowings and LinesOfCreditCurrent (a drawn credit line, how
+    IDXX files it), never two of them: commercial paper and credit lines are
+    often parts of the borrowings figure.
 
-    short = at("ShortTermBorrowings", "CommercialPaper")
-    noncurrent = at("LongTermDebtNoncurrent", "LongTermDebtAndCapitalLeaseObligations")
-    if noncurrent is not None:
-        current = at("DebtCurrent", "LongTermDebtAndCapitalLeaseObligationsCurrent")
-        if current is None:
-            current = (at("LongTermDebtCurrent") or 0.0) + (short or 0.0)
-        return noncurrent + current
-    combined = at("DebtLongtermAndShorttermCombinedAmount")
-    if combined is not None:
-        return combined
-    total_long = at("LongTermDebt")
-    if total_long is not None:
-        return total_long + (short or 0.0)
-    current = at("DebtCurrent")
-    if current is not None:
-        return current
-    return short
+    Leases are what Yahoo's debt figures include, so the 150 debt/equity limit
+    keeps the meaning it was set with: operating lease liabilities, plus finance
+    lease liabilities unless a debt tag on this balance sheet already carries
+    them (the "...AndCapitalLeaseObligations" tags).
+    """
+    def first(*concepts):
+        return _first_named(facts, concepts, end, known_by)
+
+    short = first("ShortTermBorrowings", "CommercialPaper", "OtherShortTermBorrowings",
+                  "LinesOfCreditCurrent")
+    parts: list[tuple[str, float]] | None
+    noncurrent = first("LongTermDebtNoncurrent", "LongTermDebtAndCapitalLeaseObligations")
+    if noncurrent[1] is not None:
+        current = first("DebtCurrent", "LongTermDebtAndCapitalLeaseObligationsCurrent")
+        if current[1] is not None:
+            parts = [noncurrent, current]
+        else:
+            parts = [noncurrent] + [p for p in (first("LongTermDebtCurrent"), short)
+                                    if p[1] is not None]
+    else:
+        combined = first("DebtLongtermAndShorttermCombinedAmount")
+        total_long = first("LongTermDebt",
+                           "LongTermDebtAndCapitalLeaseObligationsIncludingCurrentMaturities")
+        if combined[1] is not None:
+            parts = [combined]
+        elif total_long[1] is not None:
+            parts = [total_long] + ([short] if short[1] is not None else [])
+        else:
+            parts = None
+
+    leases = _lease_total(facts, "Operating", end, known_by)
+    if first(*CAPITAL_LEASE_DEBT)[1] is None:
+        leases += _lease_total(facts, "Finance", end, known_by)
+    return {
+        "borrowings": sum(v for _, v in parts) if parts is not None else None,
+        "leases": sum(v for _, v in leases),
+        "tags": [t for t, _ in (parts or []) + leases],
+    }
+
+
+def _debt_at(facts: dict, end: str, known_by: str, include_leases: bool = True) -> float | None:
+    """Total debt at `end` (see debt_parts), or None when borrowings are unknown."""
+    parts = debt_parts(facts, end, known_by)
+    if parts["borrowings"] is None:
+        return None
+    return parts["borrowings"] + (parts["leases"] if include_leases else 0.0)
 
 
 def _shares(facts: dict, known_by: str, max_stale_days: int) -> float | None:
@@ -508,15 +596,17 @@ def fundamentals_asof(company: Company, known_by: date, price: float | None = No
     percentage for debt/equity), each None when the filings cannot support it:
       returnOnEquity    trailing-twelve-month net income / latest equity
       operatingMargins  TTM operating income (pre-tax income if none) / TTM revenue
-      debtToEquity      total borrowings / equity x 100, leases excluded
+      debtToEquity      (borrowings + lease liabilities) / equity x 100; leases
+                        only with SEC_DEBT_INCLUDES_LEASES
       marketCap         latest cover-page share count x `price`
-    plus negativeEquity (equity <= 0 makes ROE and debt/equity meaningless) and
-    periodEnd (the quarter the figures describe).
+    plus negativeEquity (equity <= 0 makes ROE and debt/equity meaningless),
+    periodEnd (the quarter the figures describe) and debtParts (what the debt
+    figure was built from, for src/datacheck.py).
     """
     if max_stale_days is None:
         max_stale_days = config.SEC_MAX_STALENESS_DAYS
     out = {field: None for field in QUALITY_FIELDS}
-    out.update({"negativeEquity": False, "periodEnd": None})
+    out.update({"negativeEquity": False, "periodEnd": None, "debtParts": None})
     facts = company.facts or {}
     kb = known_by.isoformat()
 
@@ -536,8 +626,12 @@ def fundamentals_asof(company: Company, known_by: date, price: float | None = No
             out["negativeEquity"] = True
         elif equity is not None:
             out["returnOnEquity"] = net[0] / equity
-            debt = _debt_at(facts, end, kb)
-            if debt is not None:
+            parts = debt_parts(facts, end, kb)
+            out["debtParts"] = parts
+            if parts["borrowings"] is not None:
+                debt = parts["borrowings"]
+                if config.SEC_DEBT_INCLUDES_LEASES:
+                    debt += parts["leases"]
                 out["debtToEquity"] = debt / equity * 100.0
         out["periodEnd"] = out["periodEnd"] or end
 
