@@ -42,6 +42,7 @@ class _Cfg:
     SEC_8K_SOFT_ITEMS = config.SEC_8K_SOFT_ITEMS
     SEC_8K_HARD_LOOKBACK_DAYS = config.SEC_8K_HARD_LOOKBACK_DAYS
     SEC_8K_SOFT_LOOKBACK_DAYS = config.SEC_8K_SOFT_LOOKBACK_DAYS
+    EXCLUDED_SIC_RANGES = config.EXCLUDED_SIC_RANGES
     # Backtest knobs (small for tests)
     BACKTEST_MIN_HISTORY = 252
     BACKTEST_STEP_DAYS = 1
@@ -304,6 +305,13 @@ class TestPointInTimeQuality:
 
         same_day = _sec_company(filings=[{"date": day.isoformat(), "items": ["4.02"]}])
         assert first in find_signals(df, None, _Cfg, company=same_day)
+
+    def test_a_bank_is_rejected_by_its_industry_code(self):
+        company = _sec_company()
+        company.sic = "6021"
+        funnel = {"quality": 0, "no_sec_data": 0, "filing": 0}
+        assert find_signals(_dip_recovery_prices(), None, _Cfg, company=company, funnel=funnel) == []
+        assert funnel["quality"] > 0
 
     def test_run_backtest_compares_the_same_tickers_with_and_without(self):
         prices = {"AAA": _dip_recovery_prices(), "BBB": _dip_recovery_prices()}

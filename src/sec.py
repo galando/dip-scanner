@@ -45,15 +45,21 @@ FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
 REQUEST_PAUSE = 0.15
 TIMEOUT = 30
 
-# The 8-K items this scanner acts on, as (Hebrew, English) labels. Which are
-# hard (reject) and which soft (warn) is config: SEC_8K_HARD_ITEMS / _SOFT_ITEMS.
+# The 8-K items this scanner acts on, as (Hebrew, English) plain-language
+# labels: they are printed in alerts, for readers who have never heard of an
+# 8-K. Which are hard (reject) and which soft (warn) is config:
+# SEC_8K_HARD_ITEMS / SEC_8K_SOFT_ITEMS.
 ITEM_LABELS = {
-    "1.03": ("פשיטת רגל או כינוס נכסים", "bankruptcy or receivership"),
-    "2.04": ("האצת פירעון חוב", "debt acceleration"),
-    "2.06": ("מחיקת ערך מהותית של נכסים", "material impairment"),
-    "3.01": ("הודעה על מחיקה מהמסחר", "delisting notice"),
-    "4.02": ("הדוחות הכספיים הקודמים אינם אמינים עוד", "past financials no longer reliable"),
-    "5.02": ("שינוי בהנהלה או בדירקטוריון", "director or officer change"),
+    "1.03": ("החברה הגישה בקשה לפשיטת רגל או נכנסה לכינוס נכסים",
+             "the company filed for bankruptcy or receivership"),
+    "2.04": ("המלווים דרשו פירעון מוקדם של חוב", "lenders demanded early repayment of debt"),
+    "2.06": ("החברה מחקה חלק משמעותי מערך הנכסים שלה",
+             "the company wrote down the value of major assets"),
+    "3.01": ("הבורסה הודיעה שהמניה עלולה להימחק מהמסחר",
+             "the exchange warned the stock may be delisted"),
+    "4.02": ("החברה הודיעה שאין לסמוך על הדוחות הכספיים הקודמים שלה",
+             "the company said its past financial reports cannot be relied on"),
+    "5.02": ("שינוי בהנהלה הבכירה או בדירקטוריון", "change in top management or the board"),
 }
 
 # Gate 1 inputs, in Yahoo's field names and units, so gate_1_quality reads SEC
@@ -238,11 +244,19 @@ def parse_8k(blocks: list[dict]) -> list[dict]:
 
 
 def fetch_filings(cik: int, since: date | None = None) -> list[dict] | None:
-    """8-K events for a company; None when SEC could not be read.
+    """8-K events for a company; None when SEC could not be read."""
+    got = fetch_submissions(cik, since)
+    return got["filings"] if got is not None else None
+
+
+def fetch_submissions(cik: int, since: date | None = None) -> dict | None:
+    """{"filings": 8-K events, "sic": industry code} for a company; None when
+    SEC could not be read.
 
     The main submissions file holds at least the last year (or 1,000 filings).
     A backtest that starts earlier passes `since`, and the older pages that
-    reach back that far are fetched too.
+    reach back that far are fetched too. The SIC code is SEC's industry
+    classification ("6021" is a national commercial bank).
     """
     main = _get_json(SUBMISSIONS_URL.format(cik=cik))
     if not isinstance(main, dict):
@@ -258,7 +272,8 @@ def fetch_filings(cik: int, since: date | None = None) -> list[dict] | None:
                 # Older pages are the bare columnar block; accept the wrapped
                 # shape too rather than silently reading nothing.
                 blocks.append((extra.get("filings") or {}).get("recent") or extra)
-    return parse_8k(blocks)
+    sic = str(main.get("sic") or "").strip() or None
+    return {"filings": parse_8k(blocks), "sic": sic}
 
 
 def filing_flags(filings: list[dict], as_of: date, cfg) -> tuple[list[dict], list[dict]]:
@@ -285,12 +300,25 @@ def filing_flags(filings: list[dict], as_of: date, cfg) -> tuple[list[dict], lis
     return hard, soft
 
 
-def describe(event: dict) -> str:
-    """One bilingual warning line for an 8-K event."""
-    item = event["item"]
-    he, en = ITEM_LABELS.get(item, (f"סעיף {item}", f"item {item}"))
-    return (f"דיווח 8-K מתאריך {event['date']}: {he} / "
-            f"8-K filed {event['date']}: {en} (item {item})")
+def describe(event: dict, as_of: date | None = None) -> str:
+    """One bilingual, plain-language warning line for an 8-K event.
+
+    Says when the notice was filed and, given the scored session, how long ago,
+    so a reader can tell fresh news from a month-old change.
+    """
+    item, filed = event["item"], event["date"]
+    he, en = ITEM_LABELS.get(item, (f"דיווח מסוג {item}", f"a filing of type {item}"))
+    ago_he = ago_en = ""
+    if as_of is not None:
+        days = (as_of - date.fromisoformat(filed)).days
+        if days == 0:
+            ago_he, ago_en = " (היום)", " (today)"
+        elif days == 1:
+            ago_he, ago_en = " (אתמול)", " (yesterday)"
+        elif days > 1:
+            ago_he, ago_en = f" (לפני {days} ימים)", f" ({days} days ago)"
+    return (f"הודעה רשמית של החברה מ-{filed}{ago_he}: {he} / "
+            f"Official company notice on {filed}{ago_en}: {en}")
 
 
 # --------------------------------------------------------------------------- #
@@ -358,6 +386,7 @@ class Company:
     cik: int
     filings: list[dict]                       # 8-K events, newest first
     facts: dict[str, list[dict]] | None       # None: not requested, or SEC had none
+    sic: str | None = None                    # SEC industry code, e.g. "6021" (bank)
 
 
 def load_company(ticker: str, include_facts: bool = True,
@@ -371,9 +400,18 @@ def load_company(ticker: str, include_facts: bool = True,
         if _cik_map:                 # an empty map was already reported once
             logger.info("No SEC CIK for %s", ticker)
         return None
-    filings = fetch_filings(cik, since=since)
+    submissions = fetch_submissions(cik, since=since) or {}
     facts = fetch_facts(cik) if include_facts else None
-    return Company(ticker=ticker, cik=cik, filings=filings or [], facts=facts)
+    return Company(ticker=ticker, cik=cik, filings=submissions.get("filings") or [],
+                   facts=facts, sic=submissions.get("sic"))
+
+
+def excluded_industry(sic: str | None, cfg) -> bool:
+    """True when SEC's industry code falls in EXCLUDED_SIC_RANGES (banks)."""
+    if not sic or not str(sic).isdigit():
+        return False
+    code = int(sic)
+    return any(lo <= code <= hi for lo, hi in getattr(cfg, "EXCLUDED_SIC_RANGES", ()))
 
 
 # --------------------------------------------------------------------------- #

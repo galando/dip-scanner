@@ -91,7 +91,9 @@ SEC EDGAR for every stock that reaches the quality gate:
   (past financials no longer reliable) rejects the stock outright, whatever
   `TRAP_BEHAVIOR` says. Item 2.06 (impairment) or 5.02 (director or officer
   change) within 30 days adds a warning to the alert and costs 5 score points.
-  The item lists and windows are in `config.py`.
+  The warning is in plain words, for example *Official company notice on
+  2026-10-01 (25 days ago): change in top management or the board*. The item
+  lists and windows are in `config.py`.
 - **Fundamentals (Gate 1).** ROE, operating margin, debt/equity and market cap
   are computed from the company's 10-Q and 10-K figures (trailing twelve
   months of income over the latest balance sheet), replacing Yahoo's. A field
@@ -114,9 +116,12 @@ Behaviour to know about:
 - A company whose filed equity is zero or negative (heavy buybacks) fails
   Gate 1 with that reason: ROE and debt/equity have no meaning for it.
 - Banks and insurers file no operating income line; pre-tax income stands in.
-- Banks get a debt figure for the first time (JPM 145, WFC 117, BAC 137).
-  Yahoo gives none, so under Yahoo every bank failed the debt check by
-  accident; with SEC a bank with ROE above 12% (JPM, WFC) can pass Gate 1.
+- Banks are not screened (`EXCLUDED_SIC_RANGES`, SEC industry codes
+  6020 to 6036). Deposits are borrowed money by design, so debt/equity cannot
+  tell a sound bank from a failing one, and the two largest S&P 500 collapses
+  of 2023 (Silicon Valley Bank, First Republic) were banks whose stock "dipped
+  hard". Under Yahoo banks always failed Gate 1 on a missing debt figure; the
+  industry code makes that a rule, applied the same way in the backtest.
 - SEC trouble never costs a stock: any failure falls back to Yahoo, and a 403
   (a User-Agent SEC rejects) switches SEC off for the rest of the run with
   one log line.
@@ -521,6 +526,7 @@ All thresholds live in `config.py`. Key knobs:
 | `QUALITY_SOURCE` | "sec" | Gate 1 inputs from SEC filings when configured; "yahoo" = Yahoo only |
 | `SEC_8K_HARD_ITEMS` | 1.03, 2.04, 3.01, 4.02 | 8-K items that reject a stock (within 90 days) |
 | `SEC_8K_SOFT_ITEMS` | 2.06, 5.02 | 8-K items that warn (within 30 days) |
+| `EXCLUDED_SIC_RANGES` | 6020 to 6036 | SEC industry codes Gate 1 rejects (banks) |
 | `SIM_DURATION_DAYS` | 30 | Simulation run length — a full month from day one |
 | `SIM_MIN_HOLD_SESSIONS` | 10 | Sessions before the bounce-done exit may fire |
 | `SIM_STOP_MODE` | "pct" | "atr" = stop at `SIM_STOP_ATR_MULT` x ATR below entry (measured, not adopted) |

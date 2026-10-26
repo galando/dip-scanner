@@ -150,6 +150,7 @@ def _apply_sec(ticker: str, info: dict, price: float | None) -> dict:
         return info
 
     info["secFilings"] = company.filings
+    info["secSic"] = company.sic
     if config.QUALITY_SOURCE != "sec" or company.facts is None:
         return info
 
