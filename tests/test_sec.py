@@ -162,10 +162,52 @@ class TestDebt:
         assert self._debt(LongTermDebt=100, ShortTermBorrowings=20, CommercialPaper=15) == 120
         assert self._debt(LongTermDebt=100, CommercialPaper=15) == 115
 
-    def test_combined_amount_and_short_term_only(self):
+    def test_combined_amount_counts_and_short_term_alone_is_unknown(self):
         assert self._debt(DebtLongtermAndShorttermCombinedAmount=77) == 77
-        assert self._debt(DebtCurrent=12) == 12
-        assert self._debt(CommercialPaper=5) == 5
+        # Short-term debt with no long-term tag is what JPM looked like before
+        # its long-term tag was read: a sixth of the real figure. Unknown, not that.
+        assert self._debt(DebtCurrent=12) is None
+        assert self._debt(CommercialPaper=5) is None
+
+    # The next cases are the tag layouts real companies filed (figures in $B,
+    # from the datacheck --tags run of 2026-10-26).
+    def test_jpm_layout_long_term_debt_including_finance_leases(self):
+        assert self._debt(LongTermDebtAndCapitalLeaseObligationsIncludingCurrentMaturities=460.52,
+                          ShortTermBorrowings=72.43, OperatingLeaseLiability=9.47,
+                          FinanceLeaseLiability=3.0) == pytest.approx(542.42)   # finance already inside
+
+    def test_bac_layout_other_short_term_borrowings(self):
+        assert self._debt(LongTermDebt=339.86, OtherShortTermBorrowings=59.98) == pytest.approx(399.84)
+
+    def test_msft_layout_leases_outside_debt(self):
+        facts = {c: [_inst(self.E, v, "2026-02-15", form="10-K")] for c, v in dict(
+            LongTermDebtNoncurrent=31.07, LongTermDebtCurrent=9.23, LongTermDebt=40.29,
+            FinanceLeaseLiability=66.59, OperatingLeaseLiability=21.93).items()}
+        assert sec._debt_at(facts, self.E, self.KB) == pytest.approx(128.82)
+        assert sec._debt_at(facts, self.E, self.KB, include_leases=False) == pytest.approx(40.30)
+        parts = sec.debt_parts(facts, self.E, self.KB)
+        assert parts["tags"] == ["LongTermDebtNoncurrent", "LongTermDebtCurrent",
+                                 "OperatingLeaseLiability", "FinanceLeaseLiability"]
+
+    def test_hsy_layout_capital_lease_tag_on_the_debt_line(self):
+        """HSY tags its long-term debt line with both LongTermDebtNoncurrent and
+        LongTermDebtAndCapitalLeaseObligations: finance leases are inside it."""
+        assert self._debt(LongTermDebtNoncurrent=4.68, LongTermDebtAndCapitalLeaseObligations=4.68,
+                          LongTermDebtCurrent=0.50, ShortTermBorrowings=0.42,
+                          OperatingLeaseLiability=0.31, FinanceLeaseLiability=0.08) == pytest.approx(5.91)
+
+    def test_rol_layout_operating_lease_in_two_parts(self):
+        assert self._debt(LongTermDebt=0.49, ShortTermBorrowings=0.24,
+                          OperatingLeaseLiabilityNoncurrent=0.26,
+                          OperatingLeaseLiabilityCurrent=0.14) == pytest.approx(1.13)
+
+    def test_idxx_layout_drawn_credit_line(self):
+        assert self._debt(LongTermDebtNoncurrent=0.30, LongTermDebtCurrent=0.15,
+                          LinesOfCreditCurrent=0.52,
+                          OperatingLeaseLiability=0.13) == pytest.approx(1.10)
+
+    def test_leases_alone_do_not_make_debt_known(self):
+        assert self._debt(OperatingLeaseLiability=9.0) is None
 
     def test_no_debt_tag_at_all_is_unknown_not_zero(self):
         assert self._debt() is None

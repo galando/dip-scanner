@@ -77,6 +77,12 @@ def render(result: dict) -> str:
                          f"{_fmt(f, result['sec'].get(f)):>12}")
         if result["sec"].get("negativeEquity"):
             lines.append("    SEC: equity is zero or negative, so Gate 1 fails this stock")
+        parts = result["sec"].get("debtParts")
+        if parts:
+            borrowed = ("unknown" if parts["borrowings"] is None
+                        else f"${parts['borrowings'] / 1e9:,.2f}B")
+            lines.append(f"    debt (SEC): borrowings {borrowed} + leases "
+                         f"${parts['leases'] / 1e9:,.2f}B  [{', '.join(parts['tags']) or 'no tags'}]")
         if result["tags"] is not None:
             lines.append(f"  debt-like tags filed for {result['sec'].get('periodEnd')}:")
             for concept, val in result["tags"] or [("(none)", 0.0)]:
