@@ -107,6 +107,20 @@ class TestGate1Quality:
         assert passed is False
         assert "missing" in details.get("reason", "").lower()
 
+    def test_banks_are_not_screened(self):
+        """SEC industry code 6021 (national commercial bank) fails Gate 1 even
+        with figures that would pass; a broker (6211) is screened normally."""
+        fund = _make_fundamentals()
+        fund["secSic"] = "6021"
+        passed, details = gate_1_quality(fund, config)
+        assert passed is False
+        assert details["reason"] == ("Quality gate: bank (SEC industry code 6021); "
+                                     "banks are not screened")
+        fund["secSic"] = "6211"
+        assert gate_1_quality(fund, config)[0] is True
+        fund["secSic"] = "6021"
+        assert gate_1_quality(fund, _cfg(EXCLUDED_SIC_RANGES=()))[0] is True
+
     def test_debt_free_company_passes(self):
         """Debt/equity of 0 is the best possible value, not a missing one."""
         passed, details = gate_1_quality(_make_fundamentals(debt_eq=0), config)
@@ -335,7 +349,8 @@ class TestGate3Trap:
         passed, details = gate_3_trap(fund, prices_df, cfg=config, trap_behavior="warn")
         assert passed is False
         assert details["reason"].startswith("SEC 8-K: 4.02")
-        assert any("past financials no longer reliable" in w for w in details["warnings"])
+        assert any(w.endswith("(20 days ago): the company said its past financial "
+                              "reports cannot be relied on") for w in details["warnings"])
 
     def test_old_hard_8k_item_and_routine_items_pass(self):
         """Outside the lookback window, or an item the config does not name
@@ -360,7 +375,8 @@ class TestGate3Trap:
         fund["secFilings"] = [{"date": (session - timedelta(days=5)).isoformat(), "items": ["5.02"]}]
         passed, details = gate_3_trap(fund, prices_df, cfg=config, trap_behavior="suppress")
         assert passed is True
-        assert any("director or officer change" in w for w in details["warnings"])
+        assert any(w.endswith("(5 days ago): change in top management or the board")
+                   for w in details["warnings"])
 
     def test_negative_revenue_growth_warning(self):
         """Negative revenue growth is a soft flag."""

@@ -251,12 +251,32 @@ class TestFilings:
         assert hard == [{"item": "4.02", "date": "2026-08-15"}]
         assert soft == [{"item": "5.02", "date": "2026-10-20"}]
 
-    def test_describe_is_bilingual(self):
-        line = sec.describe({"item": "4.02", "date": "2026-08-15"})
-        assert line.startswith("דיווח 8-K מתאריך 2026-08-15: ")
-        assert line.endswith("8-K filed 2026-08-15: past financials no longer reliable (item 4.02)")
+    def test_describe_is_bilingual_plain_language_and_says_how_long_ago(self):
+        line = sec.describe({"item": "5.02", "date": "2026-10-01"}, date(2026, 10, 26))
+        assert line == ("הודעה רשמית של החברה מ-2026-10-01 (לפני 25 ימים): "
+                        "שינוי בהנהלה הבכירה או בדירקטוריון / "
+                        "Official company notice on 2026-10-01 (25 days ago): "
+                        "change in top management or the board")
+        # No jargon a Telegram reader would have to look up.
+        assert "8-K" not in line and "item" not in line
         # No price-trap marker, or score.py would weigh it as one.
         assert not any(m in line for m in ("צניחה", "שפל", "מגמת"))
+
+    def test_describe_today_yesterday_and_no_session(self):
+        event = {"item": "4.02", "date": "2026-10-26"}
+        assert "(today)" in sec.describe(event, date(2026, 10, 26))
+        assert "(היום)" in sec.describe(event, date(2026, 10, 26))
+        assert "(yesterday)" in sec.describe(event, date(2026, 10, 27))
+        assert "ago" not in sec.describe(event) and "(" not in sec.describe(event)
+
+    def test_every_configured_item_has_a_plain_label(self):
+        for item in config.SEC_8K_HARD_ITEMS + config.SEC_8K_SOFT_ITEMS:
+            assert item in sec.ITEM_LABELS
+
+    def test_banks_by_industry_code(self):
+        assert all(sec.excluded_industry(c, config) for c in ("6020", "6021", "6022", "6036"))
+        assert not any(sec.excluded_industry(c, config)
+                       for c in ("6019", "6037", "6211", "6311", None, "", "n/a"))
 
     def test_older_pages_are_fetched_only_as_far_back_as_needed(self, monkeypatch):
         monkeypatch.setenv("SEC_USER_AGENT", "Test test@example.com")
@@ -274,6 +294,8 @@ class TestFilings:
         monkeypatch.setattr(sec, "_get_json", fake)
         events = sec.fetch_filings(1, since=date(2021, 1, 1))
         assert [e["date"] for e in events] == ["2026-07-30", "2024-03-01"]
+        main["sic"] = "6021"
+        assert sec.fetch_submissions(1)["sic"] == "6021"
         assert not any(u.endswith("-002.json") for u in asked)
         assert sec.fetch_filings(1) == [{"date": "2026-07-30", "items": ["2.02"]}]
 

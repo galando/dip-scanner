@@ -39,7 +39,7 @@ def _fmt(field: str, value) -> str:
 def check(ticker: str, today: date, tags: bool = False) -> dict:
     """Everything the gates would read for one ticker, from both sources."""
     out = {"ticker": ticker, "earnings": None, "yahoo": {}, "sec": None,
-           "filings": [], "tags": None, "errors": []}
+           "filings": [], "tags": None, "sic": None, "errors": []}
     price = None
     try:
         t = yf.Ticker(ticker)
@@ -56,6 +56,7 @@ def check(ticker: str, today: date, tags: bool = False) -> dict:
             out["errors"].append("SEC: no data (no CIK, or the request failed)")
         else:
             out["sec"] = sec.fundamentals_asof(company, known_by=today, price=price)
+            out["sic"] = company.sic
             since = (today - timedelta(days=90)).isoformat()
             out["filings"] = [f for f in company.filings if f["date"] >= since]
             end = out["sec"].get("periodEnd")
@@ -70,6 +71,9 @@ def render(result: dict) -> str:
     if result["sec"] is not None:
         events = ", ".join(f"{f['date']} {'/'.join(f['items'])}" for f in result["filings"])
         lines.append(f"  8-K, last 90 days (SEC): {events or 'none'}")
+        excluded = sec.excluded_industry(result["sic"], config)
+        lines.append(f"  SEC industry code: {result['sic'] or 'n/a'}"
+                     + ("  (a bank: Gate 1 rejects it)" if excluded else ""))
         lines.append(f"  quality, as of the {result['sec'].get('periodEnd') or '?'} quarter:")
         lines.append(f"    {'field':18}{'Yahoo':>12}{'SEC':>12}")
         for f in sec.QUALITY_FIELDS:

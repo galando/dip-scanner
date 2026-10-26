@@ -69,6 +69,7 @@ def _fundamentals_at(company: "sec.Company", prices_df: pd.DataFrame, i: int) ->
     fund = sec.fundamentals_asof(company, known_by=day - timedelta(days=1),
                                  price=float(prices_df["Close"].iloc[i]))
     fund["secFilings"] = [f for f in company.filings if f["date"] < day.isoformat()]
+    fund["secSic"] = company.sic
     return fund
 
 

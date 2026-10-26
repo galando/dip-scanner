@@ -50,6 +50,16 @@ def gate_1_quality(fundamentals: dict, cfg) -> tuple[bool, dict]:
     """
     reasons = []
 
+    # Banks are not screened: deposits are borrowed money by design, so
+    # debt/equity cannot tell a sound bank from a failing one, and the two
+    # largest S&P 500 collapses of 2023 (SVB, First Republic) were banks whose
+    # stock "dipped hard". Under Yahoo banks always failed here anyway, on a
+    # missing debt figure; SEC's industry code makes it a rule, the same in the
+    # live scan and in the backtest.
+    if sec.excluded_industry(fundamentals.get("secSic"), cfg):
+        return False, {"reason": f"Quality gate: bank (SEC industry code "
+                                 f"{fundamentals['secSic']}); banks are not screened"}
+
     # SEC data says equity is zero or negative: ROE and debt/equity have no
     # meaning, so the gate cannot be passed (rather than "missing ROE").
     if fundamentals.get("negativeEquity"):
@@ -278,9 +288,9 @@ def gate_3_trap(
     # The caller decides which filings are visible (all of them live; only
     # those filed before the session in a backtest); this decides which matter.
     hard, soft = sec.filing_flags(fundamentals.get("secFilings") or [], as_of, cfg)
-    warnings.extend(sec.describe(event) for event in soft)
+    warnings.extend(sec.describe(event, as_of) for event in soft)
     if hard:
-        warnings.extend(sec.describe(event) for event in hard)
+        warnings.extend(sec.describe(event, as_of) for event in hard)
         items = ", ".join(f"{e['item']} ({e['date']})" for e in hard)
         return False, {"warnings": warnings, "reason": f"SEC 8-K: {items}"}
 

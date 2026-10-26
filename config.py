@@ -60,6 +60,9 @@ SEC_8K_SOFT_ITEMS = ("2.06", "5.02")  # Warn + score penalty: impairment, direct
 SEC_8K_HARD_LOOKBACK_DAYS = 90  # A hard item filed within N days rejects the stock
 SEC_8K_SOFT_LOOKBACK_DAYS = 30  # A soft item filed within N days warns
 SEC_MAX_STALENESS_DAYS = 200    # Latest filed quarter older than this = SEC figures treated as missing
+EXCLUDED_SIC_RANGES = ((6020, 6036),)  # SEC industry codes Gate 1 rejects: commercial banks and
+                                        # savings institutions (debt/equity says nothing about a
+                                        # bank's risk). () screens banks like everything else.
 SEC_DEBT_INCLUDES_LEASES = True # Count lease liabilities as debt, as Yahoo's figures (and so the
                                 # MAX_DEBT_EQUITY limit of 150) always did
 
