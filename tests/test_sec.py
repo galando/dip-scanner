@@ -313,3 +313,19 @@ class TestYahooOverlay:
         monkeypatch.setattr(data, "_today", lambda: date(2026, 3, 1))
         got = data._apply_sec("TST", self._info(), price=50.0)
         assert got["negativeEquity"] is True
+
+
+def test_debt_like_tags_lists_balance_sheet_values_at_the_date_largest_first():
+    raw = {"facts": {"us-gaap": {
+        "LongTermDebt": {"units": {"USD": [
+            _inst("2026-06-30", 400.0, "2026-08-01"),
+            _inst("2026-03-31", 390.0, "2026-05-01")]}},
+        "ShortTermBorrowings": {"units": {"USD": [_inst("2026-06-30", 60.0, "2026-08-01")]}},
+        "OperatingLeaseLiability": {"units": {"USD": [_inst("2026-06-30", 9.0, "2026-08-01")]}},
+        "InterestExpenseDebt": {"units": {"USD": [      # a flow, not a balance
+            _dur("2026-04-01", "2026-06-30", 5.0, "2026-08-01")]}},
+        "Revenues": {"units": {"USD": [_inst("2026-06-30", 1.0, "2026-08-01")]}},
+    }}}
+    assert sec.debt_like_tags(raw, "2026-06-30") == [
+        ("LongTermDebt", 400.0), ("ShortTermBorrowings", 60.0), ("OperatingLeaseLiability", 9.0)]
+    assert sec.debt_like_tags(None, "2026-06-30") == []
