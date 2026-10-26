@@ -320,8 +320,8 @@ def fetch_facts(cik: int) -> dict[str, list[dict]] | None:
     return extract_facts(raw) if raw is not None else None
 
 
-_DEBT_LIKE = re.compile(r"Debt|Borrowing|CommercialPaper|NotesPayable|LeaseLiabilit|LeaseObligation",
-                        re.IGNORECASE)
+_DEBT_LIKE = re.compile(r"Debt|Borrowing|CommercialPaper|NotesPayable|LeaseLiabilit|LeaseObligation"
+                        r"|LinesOfCredit|LineOfCredit", re.IGNORECASE)
 
 
 def debt_like_tags(companyfacts: dict, end: str) -> list[tuple[str, float]]:
